@@ -12,7 +12,7 @@ import jsonpath
 
 
 class geminiProvider:
-    def __init__(self, api_key: str, base_url: str = "https://api.openai.com/v1"):
+    def __init__(self, api_key: str, base_url: str = "https://generativelanguage.googleapis.com/v1beta"):
         self.api_key = api_key
         self.base_url = base_url
         self.client = httpx.AsyncClient(
@@ -306,7 +306,7 @@ if __name__ == "__main__":
         print(provider)
         openai_interface = geminiProvider(provider['api_key'], provider['base_url'])
         openai_interface._debugfile_write = False
-        openai_interface._debug = False
+        openai_interface._debug = True
         r = RequestModel(
             model="gemini-1.5-flash",
             messages=[
