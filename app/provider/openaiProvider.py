@@ -13,7 +13,7 @@ from app.log import logger
 
 import pyefun
 
-from jsonpath_ng import parse
+import jsonpath
 
 
 class openaiProvider:
@@ -41,7 +41,7 @@ class openaiProvider:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         # 构造文件的绝对路径
         self._debugfile_sse = os.path.join(current_dir + "/debugdata/openai_sse.txt")
-        self._debugfile_data = os.path.join(current_dir, "/debugdata/openai_data.txt")
+        self._debugfile_data = os.path.join(current_dir + "/debugdata/openai_data.txt")
         self._debugfile_write = False
         self._debug = True
 
@@ -81,6 +81,7 @@ class openaiProvider:
                         if line != "":
                             yield line
                 if not self._debugfile_write:
+                    logger.warning("使用缓存返回")
                     return
             except FileNotFoundError:
                 logger.warning(f"Debug file {debug_file} not found, it will be created in write mode.")
@@ -191,7 +192,12 @@ class openaiProvider:
         {"type": "end", "content": "[DONE]"} # 结束
         """
 
-        data = line.replace("data: ", "", 1).strip()
+        data = ""
+        # 处理不同格式的数据行
+        if line.startswith("data: "):
+            data = line[6:]
+        elif line.startswith("data:"):
+            data = line[5:]
 
         if data == "[DONE]":
             return {"type": "end", "content": "[DONE]"}
@@ -201,26 +207,16 @@ class openaiProvider:
         try:
             json_data = json.loads(data)
 
-            # 使用 jsonpath 提取数据
-            content_expr = parse('$.choices[0].delta.content')
-            finish_reason_expr = parse('$.choices[0].finish_reason')
-            tool_calls_expr = parse('$.choices[0].delta.tool_calls')
-            usage_expr = parse('$.usage')
-
-            content = content_expr.find(json_data)
-            content = content[0].value if content else ""
-
-            finish_reason = finish_reason_expr.find(json_data)
-            finish_reason = finish_reason[0].value if finish_reason else None
+            # 直接访问嵌套字典，而不使用 jsonpath
+            content = json_data.get("choices", [{}])[0].get("delta", {}).get("content", "")
+            finish_reason = json_data.get("choices", [{}])[0].get("finish_reason")
+            tool_calls = json_data.get("choices", [{}])[0].get("delta", {}).get("tool_calls")
+            usage = json_data.get("usage", {})
 
             if finish_reason == "stop":
-                usage = usage_expr.find(json_data)
-                if usage:
-                    usage = usage[0].value
-                    if isinstance(usage, dict):
-                        self.prompt_tokens = usage.get("prompt_tokens", 0)
-                        self.completion_tokens = usage.get("completion_tokens", 0)
-                        self.total_tokens = usage.get("total_tokens", 0)
+                self.prompt_tokens = usage.get("prompt_tokens", 0)
+                self.completion_tokens = usage.get("completion_tokens", 0)
+                self.total_tokens = usage.get("total_tokens", 0)
                 return {
                     "type": "stop",
                     "content": content,
@@ -229,9 +225,8 @@ class openaiProvider:
                     "total_tokens": self.total_tokens
                 }
 
-            tool_calls = tool_calls_expr.find(json_data)
             if not content and tool_calls:
-                content = json.dumps(tool_calls[0].value)
+                return {"type": "function_call", "function": tool_calls[0]}
 
             return {"type": "content", "content": content}
         except Exception as e:
@@ -326,7 +321,7 @@ if __name__ == "__main__":
         # model_name = "glm-4-flash"
         model_name = "doubao-pro-128k"
         model_name = "moonshot-v1-128k"
-
+        model_name = "qwen2-72b"
         providers, error = await db.get_user_provider("sk-111111", model_name)
         provider = providers[0]
         api_key = provider['api_key']
@@ -335,9 +330,12 @@ if __name__ == "__main__":
         print(provider)
         openai_interface = openaiProvider(api_key, base_url)
 
-        openai_interface._debugfile_sse = f"./debugdata/{model_name}_sse.txt"
-        openai_interface._debugfile_data = f"./debugdata/{model_name}_data.txt"
-        openai_interface._debugfile_write = True
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # 构造文件的绝对路径
+        modelnamefile = model_name.replace("/", "-")
+        openai_interface._debugfile_sse = os.path.join(current_dir + f"/debugdata/{modelnamefile}_sse.txt")
+        openai_interface._debugfile_data = os.path.join(current_dir + f"/debugdata/{modelnamefile}_data.txt")
+        # openai_interface._debugfile_write = True
         openai_interface._debug = True
         # async for response in openai_interface.chat2api(RequestModel(
         #     model="glm-4-flash",
@@ -358,7 +356,7 @@ if __name__ == "__main__":
                 stream=True,
         )):
             content += response
-            logger.info(content)
+            logger.info("收到:" + content)
 
 
     asyncio.run(main())

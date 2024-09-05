@@ -90,8 +90,11 @@ async def chat_completions(
     ai_provider = ai_provider_class(provider.get("api_key"), provider.get("base_url"))
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # 构造文件的绝对路径
-    ai_provider._debugfile_sse = os.path.join(current_dir + f"/provider/debugdata/{provider.get('mapped_model')}_sse.txt")
-    ai_provider._debugfile_data = os.path.join(current_dir + f"/provider/debugdata/{provider.get('mapped_model')}_data.txt")
+    modelnamefile = provider.get('mapped_model')
+    modelnamefile = modelnamefile.replace("/", "-")
+
+    ai_provider._debugfile_sse = os.path.join(current_dir + f"/provider/debugdata/{modelnamefile}_sse.txt")
+    ai_provider._debugfile_data = os.path.join(current_dir + f"/provider/debugdata/{modelnamefile}_data.txt")
     # ai_provider._debugfile_write = False
     # ai_provider._debug = True
     ai_provider._debug = False
