@@ -1,0 +1,1 @@
+{"choices":[{"finish_reason":"stop","index":0,"message":{"content":"春天是万物复苏的季节，繁花似锦，春风拂面，生机盎然。","role":"assistant"}}],"created":1725555771,"id":"20240906010250c6106ea5c1b44dc4","model":"glm-4-flash","request_id":"20240906010250c6106ea5c1b44dc4","usage":{"completion_tokens":21,"prompt_tokens":12,"total_tokens":33}}

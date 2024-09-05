@@ -4,8 +4,10 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
+
+from provider.geminiProvider import geminiProvider
 from provider.models import RequestModel, Message, ContentItem
-from provider.openaiProvider import OpenAiInterface
+from provider.openaiProvider import openaiProvider
 from app.error_info import generate_error_response
 from app.log import logger
 from database import Database
@@ -54,6 +56,13 @@ async def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(sec
         raise HTTPException(status_code=401, detail="没有授权")
     return api_key
 
+def getProvider(provider):
+    if provider == "openai":
+        return openaiProvider
+    if provider == "gemini":
+        return geminiProvider
+    raise HTTPException(status_code=500, detail="没有适配器")
+
 
 @app.post("/v1/chat/completions")
 async def chat_completions(
@@ -70,14 +79,16 @@ async def chat_completions(
     request.id = id
     logger.name = f"main.{request.id}"
     logger.info(
-        f"请求模型:{request.model} 当前模型:{provider.get('mapped_model')} 名称:{provider.get('name')} \r\n 请求内容:\r\n{request.model_dump_json(indent=2)}")
+        f"服务提供者:{provider['provider']} 请求模型:{request.model} 当前模型:{provider.get('mapped_model')} 名称:{provider.get('name')} \r\n 请求内容:\r\n{request.model_dump_json(indent=2)}")
 
+    ai_provider_class = getProvider(provider["provider"])
     # 创建openai接口
-    openai_interface = OpenAiInterface(provider.get("api_key"), provider.get("base_url"))
+    ai_provider = ai_provider_class(provider.get("api_key"), provider.get("base_url"))
+    ai_provider._debug = False
     request_model_name = request.model  # 保存请求时候的模型名称
     request.model = provider.get("mapped_model")  # 映射为正确的名称
     # 发送请求
-    genData = openai_interface.chat2api(request, request_model_name, id)
+    genData = ai_provider.chat2api(request, request_model_name, id)
     # 得到转发数据
     first_chunk = await genData.__anext__()
 

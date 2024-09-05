@@ -14,3 +14,5 @@ def test_openai_interface_chat():
         print(response)  # 打印每个 yield 的结果
 
     print("测试完成")
+
+

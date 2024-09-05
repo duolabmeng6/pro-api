@@ -35,6 +35,15 @@ providers:
       - meta-llama/Meta-Llama-3.1-8B-Instruct: meta-llama-3.1-8b
       - mistralai/Mistral-7B-Instruct-v0.2: mistral-7b
 
+  - provider: gemini
+    name: Gemini
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    api_key: sss
+    model:
+      - gemini-1.5-pro
+      - gemini-1.5-flash
+      - gemini-1.5-flash: gpt-4o
+
 tokens:
   - api_key: sk-111111
     model:

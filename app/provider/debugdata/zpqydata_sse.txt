@@ -1,0 +1,74 @@
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"春天"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"是"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"万物"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"复苏"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"的季节"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"，"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"花开"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"满"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"园"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"，"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"阳光"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"明媚"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"；"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"春风"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"拂"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"面"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"，"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"带来"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"生机"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"勃勃"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"的气息"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"；"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"春天"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"也是"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"播种"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"希望"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"的时刻"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"，"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"孕育"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"着"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"新的"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"生命"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"与"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"美好"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"。"}}]}
+
+data: {"id":"20240906005347e886b8d43e424f19","created":1725555227,"model":"glm-4-flash","choices":[{"index":0,"finish_reason":"stop","delta":{"role":"assistant","content":""}}],"usage":{"prompt_tokens":12,"completion_tokens":37,"total_tokens":49}}
+
+data: [DONE]
+
