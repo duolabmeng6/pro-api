@@ -11,10 +11,6 @@ import ujson as json
 from app.help import generate_sse_response, build_openai_response
 from app.log import logger
 
-import pyefun
-
-import jsonpath
-
 
 class openaiProvider:
     def __init__(self, api_key: str, base_url: str = "https://api.openai.com/v1"):
