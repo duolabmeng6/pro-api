@@ -17,7 +17,8 @@ from app.log import logger
 from database import Database
 import uuid
 
-db = Database("./api.yaml")
+db = Database(os.path.join(os.path.dirname(__file__), './api.yaml'))
+
 
 
 @asynccontextmanager
