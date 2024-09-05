@@ -48,7 +48,7 @@ class Database:
                 providers.append({
                     "name": provider.get('name'),
                     "provider": provider.get('provider'),
-                    "mapped_model": mapped_model,  # 转换的模型名称
+                    "mapped_model": mapped_model,  # 转换的模型名称 转发的话提交这个模型名称
                     "original_model": original_model,  # 请求的模型名称
                     "base_url": provider.get('base_url'),
                     "api_key": provider.get('api_key'),

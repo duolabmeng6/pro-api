@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -50,11 +51,14 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 security = HTTPBearer()
+
+
 async def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
     api_key = credentials.credentials
     if not await db.verify_token(api_key):
         raise HTTPException(status_code=401, detail="没有授权")
     return api_key
+
 
 def getProvider(provider):
     if provider == "openai":
@@ -84,7 +88,14 @@ async def chat_completions(
     ai_provider_class = getProvider(provider["provider"])
     # 创建openai接口
     ai_provider = ai_provider_class(provider.get("api_key"), provider.get("base_url"))
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # 构造文件的绝对路径
+    ai_provider._debugfile_sse = os.path.join(current_dir + f"/provider/debugdata/{provider.get('mapped_model')}_sse.txt")
+    ai_provider._debugfile_data = os.path.join(current_dir + f"/provider/debugdata/{provider.get('mapped_model')}_data.txt")
+    # ai_provider._debugfile_write = False
+    # ai_provider._debug = True
     ai_provider._debug = False
+
     request_model_name = request.model  # 保存请求时候的模型名称
     request.model = provider.get("mapped_model")  # 映射为正确的名称
     # 发送请求
@@ -114,6 +125,7 @@ app.add_middleware(
 )
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "__main__:app",
         host=db.config_server.get("host", "0.0.0.0"),

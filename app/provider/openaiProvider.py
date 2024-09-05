@@ -1,4 +1,5 @@
 import asyncio
+import os
 import uuid
 from logging import DEBUG
 
@@ -11,6 +12,9 @@ from app.help import generate_sse_response, build_openai_response
 from app.log import logger
 
 import pyefun
+
+from jsonpath_ng import parse
+
 
 class openaiProvider:
     def __init__(self, api_key: str, base_url: str = "https://api.openai.com/v1"):
@@ -33,27 +37,32 @@ class openaiProvider:
         self.completion_tokens = 0
         self.total_tokens = 0
 
-        self._debugfile_sse = "./debugdata/zpqydata_sse.txt"
-        self._debugfile_data = "./debugdata/zpqydata_data.txt"
+        # 获取当前脚本所在的目录
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # 构造文件的绝对路径
+        self._debugfile_sse = os.path.join(current_dir + "/debugdata/openai_sse.txt")
+        self._debugfile_data = os.path.join(current_dir, "/debugdata/openai_data.txt")
         self._debugfile_write = False
         self._debug = True
 
     async def _get_api_data(self, stream: bool, url: str, payload: Dict[str, Any]) -> AsyncGenerator[str, None]:
         if stream:
-            # Streamed request
             async with self.client.stream("POST", url, json=payload) as response:
                 await self.raise_for_status(response)
+                buffer = ""
                 async for chunk in response.aiter_text():
-                    chunk = chunk.strip()
-                    if chunk:  # Ignore empty chunks
-                        yield chunk
+                    buffer += chunk
+                    while '\n' in buffer:
+                        line, buffer = buffer.split('\n', 1)
+                        line = line.strip()
+                        if line.startswith('data:'):  # 只处理 SSE 数据行
+                            yield line
         else:
             # Non-streamed request
             response = await self.client.post(url, json=payload)
             await self.raise_for_status(response)
             response_text = response.content.decode("utf-8")
             yield response_text
-
 
     async def sendChatCompletions(self, request: RequestModel) -> AsyncGenerator[str, None]:
         logger.name = f"openaiProvider.{request.id}.request.model"
@@ -69,7 +78,7 @@ class openaiProvider:
                 with open(debug_file, "r") as f:
                     for line in f:
                         line = line.strip()
-                        if line:
+                        if line != "":
                             yield line
                 if not self._debugfile_write:
                     return
@@ -129,7 +138,7 @@ class openaiProvider:
         async for chunk in genData:
             content = await self.extract_content_stream(chunk)
             if isinstance(content, dict):
-                if "error" in content:
+                if "error" in content['type']:
                     logger.error(f"发生错误: {content['error']}")
                     continue
 
@@ -138,6 +147,11 @@ class openaiProvider:
     async def chat(self, request: RequestModel) -> AsyncGenerator[str, None]:
         try:
             async for chunk in self.sendChatCompletions(request):
+                # 缓存请求的时候解除这里的屏蔽 然后就可以调试解析格式
+                if self._debugfile_write:
+                    yield chunk
+                    continue
+
                 if request.stream:
                     content = await self.extract_content_stream(chunk)
                     if content['type'] == 'content':
@@ -176,54 +190,53 @@ class openaiProvider:
         {"type": "stop", "content": "你好", "prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20} # 完成
         {"type": "end", "content": "[DONE]"} # 结束
         """
-        # 初始化数据变量
-        data = ""
-        # 处理不同格式的数据行
-        if line.startswith("data: "):
-            data = line[6:]
-        elif line.startswith("data:"):
-            data = line[5:]
 
-        # 检查是否为结束标记
-        if data.strip() == "[DONE]":
+        data = line.replace("data: ", "", 1).strip()
+
+        if data == "[DONE]":
             return {"type": "end", "content": "[DONE]"}
-        if data == "":
-            return {"type": "error", "content": "JSON decode error"}
+        if not data:
+            return {"type": "error", "content": "空数据"}
 
         try:
-            # 解析JSON数据
-            data = json.loads(data)
-            delta = data["choices"][0]["delta"]
-            content = delta.get("content", "")
+            json_data = json.loads(data)
 
-            # 检查是否有完成原因
-            if "finish_reason" in data["choices"][0]:
-                finish_reason = data["choices"][0]["finish_reason"]
-                if finish_reason == "stop":
-                    # 如果完成原因是"stop"，返回包含使用情况的字典
-                    usage = data.get("usage", {})
-                    self.prompt_tokens = usage.get("prompt_tokens", 0)
-                    self.completion_tokens = usage.get("completion_tokens", 0)
-                    self.total_tokens = usage.get("total_tokens", 0)
-                    return {
-                        "type": "stop",
-                        "content": content,
-                        "prompt_tokens": self.prompt_tokens,
-                        "completion_tokens": self.completion_tokens,
-                        "total_tokens": self.total_tokens
-                    }
+            # 使用 jsonpath 提取数据
+            content_expr = parse('$.choices[0].delta.content')
+            finish_reason_expr = parse('$.choices[0].finish_reason')
+            tool_calls_expr = parse('$.choices[0].delta.tool_calls')
+            usage_expr = parse('$.usage')
 
-            # 处理工具调用
-            if not content and "tool_calls" in delta:
-                content = json.dumps(delta["tool_calls"])
+            content = content_expr.find(json_data)
+            content = content[0].value if content else ""
 
-            # 返回内容
+            finish_reason = finish_reason_expr.find(json_data)
+            finish_reason = finish_reason[0].value if finish_reason else None
+
+            if finish_reason == "stop":
+                usage = usage_expr.find(json_data)
+                if usage:
+                    usage = usage[0].value
+                    if isinstance(usage, dict):
+                        self.prompt_tokens = usage.get("prompt_tokens", 0)
+                        self.completion_tokens = usage.get("completion_tokens", 0)
+                        self.total_tokens = usage.get("total_tokens", 0)
+                return {
+                    "type": "stop",
+                    "content": content,
+                    "prompt_tokens": self.prompt_tokens,
+                    "completion_tokens": self.completion_tokens,
+                    "total_tokens": self.total_tokens
+                }
+
+            tool_calls = tool_calls_expr.find(json_data)
+            if not content and tool_calls:
+                content = json.dumps(tool_calls[0].value)
+
             return {"type": "content", "content": content}
         except Exception as e:
-            # 记录JSON解析错误
-            logger.error(f"JSON decode error for line data:\r\n{data} \r\nerror:\r\n{e}")
-
-            return {"type": "error", "content": "JSON decode error"}
+            logger.error(f"extract_content_stream 数据解析错误:\r\n{data} \r\n错误:\r\n{e}")
+            return {"type": "error", "content": "JSON 解析错误"}
 
     async def extract_content(self, data: str) -> str:
         try:
@@ -248,10 +261,7 @@ class openaiProvider:
             logger.error(f"JSON 解析错误，数据行：{data}")
             return 0, 0, 0
 
-
-
-
-    async def get_payload(self,request: RequestModel) -> Dict[str, Any]:
+    async def get_payload(self, request: RequestModel) -> Dict[str, Any]:
         messages = []
         for msg in request.messages:
             tool_calls = getattr(msg, 'tool_calls', None)
@@ -295,6 +305,7 @@ class openaiProvider:
             "model": request.model,
             "messages": messages,
             "stream": request.stream,
+            # "logprobs": True
         }
 
         for field, value in request.model_dump(exclude_unset=True).items():
@@ -312,15 +323,21 @@ if __name__ == "__main__":
     async def main():
         from app.database import Database
         db = Database("../api.yaml")
-        providers, error = await db.get_user_provider("sk-111111", "glm-4-flash")
+        # model_name = "glm-4-flash"
+        model_name = "doubao-pro-128k"
+        model_name = "moonshot-v1-128k"
+
+        providers, error = await db.get_user_provider("sk-111111", model_name)
         provider = providers[0]
         api_key = provider['api_key']
         base_url = provider['base_url']
+        model_name = provider['mapped_model']
         print(provider)
         openai_interface = openaiProvider(api_key, base_url)
-        openai_interface._debugfile_sse = "./debugdata/zpqydata_sse.txt"
-        openai_interface._debugfile_data = "./debugdata/zpqydata_data.txt"
-        openai_interface._debugfile_write = False
+
+        openai_interface._debugfile_sse = f"./debugdata/{model_name}_sse.txt"
+        openai_interface._debugfile_data = f"./debugdata/{model_name}_data.txt"
+        openai_interface._debugfile_write = True
         openai_interface._debug = True
         # async for response in openai_interface.chat2api(RequestModel(
         #     model="glm-4-flash",
@@ -334,14 +351,14 @@ if __name__ == "__main__":
         #     else:
         #         logger.error(response)
 
-
         content = ""
         async for response in openai_interface.chat(RequestModel(
-                model="glm-4-flash",
+                model=model_name,
                 messages=[Message(role="user", content="请用三句话描述春天。")],
                 stream=True,
         )):
             content += response
             logger.info(content)
+
 
     asyncio.run(main())

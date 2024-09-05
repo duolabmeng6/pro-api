@@ -35,7 +35,7 @@ class geminiProvider:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         # 构造文件的绝对路径
         self._debugfile_sse = os.path.join(current_dir + "/debugdata/geminidata_sse.txt")
-        self._debugfile_data = os.path.join(current_dir, "debugdata/geminidata_data.txt")
+        self._debugfile_data = os.path.join(current_dir, "/debugdata/geminidata_data.txt")
         self._debugfile_write = False
         self._debug = True
 
