@@ -1,1 +1,51 @@
 /app/logs/
+# Python相关
+__pycache__/
+*.py[cod]
+*.so
+
+# 虚拟环境
+venv/
+env/
+.env
+
+# IDE相关
+.vscode/
+.idea/
+.venv/
+
+# 操作系统相关
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+
+# 数据库文件
+*.sqlite3
+*.db
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
+
+# 依赖管理
+pip-log.txt
+pip-delete-this-directory.txt
+
+# 构建输出
+build/
+dist/
+*.egg-info/
+
+# 测试覆盖率报告
+.coverage
+htmlcov/
+
+# 其他
+*.csv
+*.json
+*.yaml
+*.yml
+!config.yml
