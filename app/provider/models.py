@@ -79,6 +79,7 @@ class RequestModel(BaseModel):
     include_usage: Optional[bool] = None
     temperature: Optional[float] = 0.5
     top_p: Optional[float] = 1.0
+    top_k: Optional[float] = 40 # 谷歌的参数
     max_tokens: Optional[int] = None
     presence_penalty: Optional[float] = 0.0
     frequency_penalty: Optional[float] = 0.0

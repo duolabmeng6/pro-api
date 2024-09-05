@@ -2,26 +2,23 @@ import asyncio
 import httpx
 from typing import Dict, Any, AsyncGenerator, Tuple
 from fastapi import HTTPException
-from app.AiServiceClass.models import RequestModel, Message
+from app.provider.models import RequestModel, Message
 import ujson as json
 from app.help import generate_sse_response, build_openai_response
 from app.log import logger
 
 
-class OpenAiInterface:
-    def __init__(self, api_key: str, base_url: str = "https://api.openai.com/v1"):
+class geminiProvider:
+    def __init__(self, api_key: str, base_url: str = "https://generativelanguage.googleapis.com/v1beta"):
         self.api_key = api_key
         self.base_url = base_url
         self.client = httpx.AsyncClient(
             base_url=self.base_url,
             headers={
-                "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
-                "Accept": "*/*",
-                "User-Agent": "curl/7.68.0",
             },
             timeout=httpx.Timeout(connect=15.0, read=600, write=30.0, pool=30.0),
-            http2=False,  # 将 http2 设置为 False
+            http2=True,
             verify=True,
             follow_redirects=True,
         )
@@ -30,31 +27,24 @@ class OpenAiInterface:
         self.total_tokens = 0
 
     async def sendChatCompletions(self, request: RequestModel) -> AsyncGenerator[str, None]:
-        logger.name = f"OpenAiInterface.{request.id}.request.model"
-        payload = await get_gpt_payload(request)
+        logger.name = f"geminiProvider.{request.id}.request.model"
+        payload = await get_gemini_payload(request)
 
-        url = f"{self.base_url}/chat/completions"
-        logger.info(f"\r\nsend {url} \r\nbody:\r\n{json.dumps(payload, indent=2, ensure_ascii=False)}")
+        url = f"{self.base_url}/models/{request.model}:generateContent?key={self.api_key}"
+        logger.info(f"\r\n发送请求到 {url} \r\n请求体:\r\n{json.dumps(payload, indent=2, ensure_ascii=False)}")
 
         if request.stream:
             async with self.client.stream("POST", url, json=payload) as response:
                 await self.raise_for_status(response)
-                buffer = ""
                 async for chunk in response.aiter_text():
-                    buffer += chunk
-                    while "\n" in buffer:
-                        line, buffer = buffer.split("\n", 1)
-                        if line:
-                            yield line
-                            logger.info(f"收到数据\r\n{line}")
-
-        if not request.stream:
+                    yield chunk
+                    logger.info(f"收到数据\r\n{chunk}")
+        else:
             response = await self.client.post(url, json=payload)
             await self.raise_for_status(response)
             data = response.json()
-            # 我想记录data写到日志
             logger.info(f"收到数据\r\n{json.dumps(data, indent=2, ensure_ascii=False)}")
-            yield data
+            yield json.dumps(data)
 
     async def chat2api(self, request: RequestModel, request_model_name: str = "", id: str = "") -> AsyncGenerator[
         str, None]:
@@ -62,7 +52,7 @@ class OpenAiInterface:
             genData = self.sendChatCompletions(request)
             first_chunk = await genData.__anext__()
         except Exception as e:
-            raise HTTPException(status_code=404, detail=e)
+            raise HTTPException(status_code=404, detail=str(e))
 
         if not request.stream:
             content = await self.extract_content(first_chunk)
@@ -113,46 +103,14 @@ class OpenAiInterface:
         }
         raise HTTPException(status_code=500, detail=error_data)
 
-    async def extract_content_stream(self, line: str) -> Dict[str, Any]:
-        """
-        解析SSE流数据行提取
-        :param line: 数据行
-        :return: 解析后的数据
-
-        解析后的数据类型
-        {"type": "content", "content": "你好"} # 内容
-        {"type": "error", "content": ""} # 不返回就行
-        {"type": "function_call", "function": {"name": "function_name", "arguments": "function_arguments"}} # 工具调用
-        {"type": "stop", "content": "你好", "prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20} # 完成
-        {"type": "end", "content": "[DONE]"} # 结束
-        """
-        # 初始化数据变量
-        data = ""
-        # 处理不同格式的数据行
-        if line.startswith("data: "):
-            data = line[6:]
-        elif line.startswith("data:"):
-            data = line[5:]
-
-        # 检查是否为结束标记
-        if data.strip() == "[DONE]":
-            return {"type": "end", "content": "[DONE]"}
-
+    async def extract_content_stream(self, chunk: str) -> Dict[str, Any]:
         try:
-            # 解析JSON数据
-            data = json.loads(data)
-            delta = data["choices"][0]["delta"]
-            content = delta.get("content", "")
+            data = json.loads(chunk)
+            content = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
 
-            # 检查是否有完成原因
-            if "finish_reason" in data["choices"][0]:
-                finish_reason = data["choices"][0]["finish_reason"]
-                if finish_reason == "stop":
-                    # 如果完成原因是"stop"，返回包含使用情况的字典
-                    usage = data.get("usage", {})
-                    self.prompt_tokens = usage.get("prompt_tokens", 0)
-                    self.completion_tokens = usage.get("completion_tokens", 0)
-                    self.total_tokens = usage.get("total_tokens", 0)
+            if "finishReason" in data.get("candidates", [{}])[0]:
+                finish_reason = data["candidates"][0]["finishReason"]
+                if finish_reason == "STOP":
                     return {
                         "type": "stop",
                         "content": content,
@@ -161,23 +119,18 @@ class OpenAiInterface:
                         "total_tokens": self.total_tokens
                     }
 
-            # 处理工具调用
-            if not content and "tool_calls" in delta:
-                content = json.dumps(delta["tool_calls"])
-
-            # 返回内容
             return {"type": "content", "content": content}
         except json.JSONDecodeError:
-            # 记录JSON解析错误
-            logger.error(f"JSON decode error for line: {line}")
-            return {"type": "error", "content": "JSON decode error"}
+            logger.error(f"JSON解析错误,数据行: {chunk}")
+            return {"type": "error", "content": "JSON解析错误"}
 
     async def extract_content(self, data: str) -> str:
         try:
-            content = data["choices"][0]["message"]["content"]
+            parsed_data = json.loads(data)
+            content = parsed_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
             return content
         except json.JSONDecodeError:
-            logger.error(f"JSON decode error for line: {data}")
+            logger.error(f"JSON解析错误,数据: {data}")
             return ""
 
     async def extract_usage(self, data: str) -> Tuple[int, int, int]:
@@ -205,54 +158,40 @@ async def get_image_message(base64_image: str) -> Dict[str, Any]:
     }
 
 
-async def get_gpt_payload(request: RequestModel) -> Dict[str, Any]:
-    messages = []
+async def get_gemini_payload(request: RequestModel) -> Dict[str, Any]:
+    contents = []
     for msg in request.messages:
-        tool_calls = getattr(msg, 'tool_calls', None)
-        tool_call_id = getattr(msg, 'tool_call_id', None)
-
         if isinstance(msg.content, list):
-            content = []
+            parts = []
             for item in msg.content:
                 if item.type == "text":
-                    text_message = await get_text_message(item.text)
-                    content.append(text_message)
+                    parts.append({"text": item.text})
                 elif item.type == "image_url":
-                    image_message = await get_image_message(item.image_url.url)
-                    content.append(image_message)
+                    parts.append({
+                        "inline_data": {
+                            "mime_type": "image/jpeg",
+                            "data": item.image_url.url.split(",")[1]  # 假设base64编码的图片数据
+                        }
+                    })
+            contents.append({"role": msg.role, "parts": parts})
         else:
-            content = msg.content
-
-        if tool_calls:
-            tool_calls_list = []
-            for tool_call in tool_calls:
-                tool_calls_list.append({
-                    "id": tool_call.id,
-                    "type": tool_call.type,
-                    "function": {
-                        "name": tool_call.function.name,
-                        "arguments": tool_call.function.arguments
-                    }
-                })
-            messages.append({"role": msg.role, "tool_calls": tool_calls_list})
-        elif tool_call_id:
-            messages.append({"role": msg.role, "tool_call_id": tool_call_id, "content": content})
-        else:
-            messages.append({"role": msg.role, "content": content})
+            contents.append({"role": msg.role, "parts": [{"text": msg.content}]})
 
     payload = {
-        "model": request.model,
-        "messages": messages,
-        "stream": request.stream,
+        "contents": contents,
+        "generationConfig": {
+            "temperature": request.temperature or 0.7,
+            "top_p": request.top_p or 0.95,
+            "top_k": request.top_k or 40,
+            "max_output_tokens": request.max_tokens or 8192,
+        },
+        "safetySettings": [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+        ]
     }
-
-    for field, value in request.model_dump(exclude_unset=True).items():
-        if field not in ['model', 'messages', 'stream'] and value is not None:
-            payload[field] = value
-
-    # 如果存在最追踪用的id就删除
-    if "id" in payload:
-        del payload["id"]
 
     return payload
 
@@ -261,10 +200,10 @@ if __name__ == "__main__":
     async def main():
         from app.database import Database
         db = Database("../api.yaml")
-        providers, error = await db.get_user_provider("sk-111111", "glm-4-flash")
+        providers, error = await db.get_user_provider("sk-111111", "gemini-1.5-flash")
         print(providers)
         provider = providers[0]
-        openai_interface = OpenAiInterface(provider['api_key'], provider['base_url'])
+        openai_interface = geminiProvider(provider['api_key'], provider['base_url'])
         # 转api
         # async for response in openai_interface.chat2api(RequestModel(
         #     model="glm-4-flash",
@@ -274,9 +213,9 @@ if __name__ == "__main__":
         #     print(response)
         #
         async for response in openai_interface.chat(RequestModel(
-                model="glm-4-flash",
+                model="gemini-1.5-flash",
                 messages=[Message(role="user", content="请用三句话描述春天。")],
-                stream=False,
+                stream=True,
         )):
             print(response)
 

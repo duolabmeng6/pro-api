@@ -4,8 +4,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
-from AiServiceClass.models import RequestModel, Message, ContentItem
-from AiServiceClass.OpenAiInterface import OpenAiInterface
+from provider.models import RequestModel, Message, ContentItem
+from provider.openaiProvider import OpenAiInterface
 from app.error_info import generate_error_response
 from app.log import logger
 from database import Database

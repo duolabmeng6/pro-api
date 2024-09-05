@@ -1,7 +1,7 @@
 import asyncio
 import httpx
 from typing import List, Dict, Any, AsyncGenerator
-from app.AiServiceClass.models import RequestModel, Message, ContentItem, Tool, FunctionParameter, Function
+from app.provider.models import RequestModel, Message, ContentItem, Tool, FunctionParameter, Function
 import json
 import logging
 

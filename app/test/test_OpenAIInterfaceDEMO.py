@@ -1,6 +1,6 @@
 import pytest
-from app.AiServiceClass.OpenAiInterface import OpenAiInterface
-from app.AiServiceClass.models import RequestModel, Message, ContentItem
+from app.provider.openaiProvider import OpenAiInterface
+from app.provider.models import RequestModel, Message, ContentItem
 
 
 def test_openai_interface_chat():
