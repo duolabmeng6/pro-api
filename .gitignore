@@ -49,3 +49,4 @@ htmlcov/
 *.yaml
 *.yml
 !config.yml
+.env
