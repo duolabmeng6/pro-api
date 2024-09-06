@@ -165,22 +165,29 @@ class aiEasy:
         print(f"最终结果: {output_data}")
         if output:
             ok = False
-            # 使用正则表达式截取 ```json 和 ``` 之间的内容
+            # 使用正则表达式截取代码块内容
             import re
-            json_match = re.search(r'```json\s*(.*?)\s*```', output_data, re.DOTALL)
-            if json_match:
-                output_data = json_match.group(1)
+            pattern = r'```(?:\w+)?\s*\n?(.*?)(?:\n?```|$)'
+            matches = re.findall(pattern, output_data, re.DOTALL)
+            if matches:
+                output_data = '\n'.join(matches)
+            
+            # 尝试解析JSON
+            try:
+                output_data = json.loads(output_data)
+                ok = True
+            except json.JSONDecodeError:
+                # 如果解析失败，尝试清理字符串并再次解析
+                cleaned_data = re.sub(r'[\n\r\t]', '', output_data)
                 try:
-                    output_data = json.loads(output_data)
+                    output_data = json.loads(cleaned_data)
                     ok = True
                 except json.JSONDecodeError:
                     print("JSON 解析失败")
+                    # 如果仍然失败，保留原始字符串
+            
             if not ok:
-                try:
-                    output_data = json.loads(output_data)
-                    ok = True
-                except json.JSONDecodeError:
-                    print("JSON 解析失败")
+                print("无法解析为JSON，保留原始输出")
 
             print(f"json最终结果: {output_data}")
 
