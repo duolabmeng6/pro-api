@@ -33,13 +33,17 @@ class openaiProvider:
         self.completion_tokens = 0
         self.total_tokens = 0
 
+        self._debug = True
+        self._cache = True
+        self.setDebugSave("openai")
+
+    def setDebugSave(self, name="openai"):
+        name = name.replace("/", "-")
         # 获取当前脚本所在的目录
         current_dir = os.path.dirname(os.path.abspath(__file__))
         # 构造文件的绝对路径
-        self._debugfile_sse = os.path.join(current_dir + "/debugdata/openai_sse.txt")
-        self._debugfile_data = os.path.join(current_dir + "/debugdata/openai_data.txt")
-        self._debugfile_write = False
-        self._debug = True
+        self._debugfile_sse = os.path.join(current_dir + f"/debugdata/{name}_sse.txt")
+        self._debugfile_data = os.path.join(current_dir + f"/debugdata/{name}_data.txt")
 
     async def _get_api_data(self, stream: bool, url: str, payload: Dict[str, Any]) -> AsyncGenerator[str, None]:
         if stream:
@@ -68,23 +72,21 @@ class openaiProvider:
         logger.info(f"\r\nsend {url} \r\nbody:\r\n{json.dumps(payload, indent=2, ensure_ascii=False)}")
 
         # 调试部分 不要看
-        debug_file = self._debugfile_sse if request.stream else self._debugfile_data
         if self._debug:
-            try:
-                with open(debug_file, "r") as f:
-                    for line in f:
-                        line = line.strip()
-                        if line != "":
-                            yield line
-                if not self._debugfile_write:
-                    logger.warning("使用缓存返回")
+            debug_file = self._debugfile_sse if request.stream else self._debugfile_data
+            if self._cache:
+                try:
+                    with open(debug_file, "r") as f:
+                        for line in f:
+                            line = line.strip()
+                            if line != "":
+                                yield line
                     return
-            except FileNotFoundError:
-                logger.warning(f"Debug file {debug_file} not found, it will be created in write mode.")
+                except FileNotFoundError:
+                    logger.warning(f"Debug file {debug_file} not found, it will be created in write mode.")
 
-        # Prepare to write to debug file if enabled
         file_handle = None
-        if self._debugfile_write:
+        if self._cache:
             mode = 'w' if request.stream else 'a'
             try:
                 file_handle = open(debug_file, mode)
@@ -94,7 +96,7 @@ class openaiProvider:
         try:
             # 这里是真正的写的部分
             async for line in self._get_api_data(request.stream, url, payload):
-                if self._debugfile_write and file_handle:
+                if self._cache:
                     try:
                         file_handle.write(line + "\n")
                     except IOError as e:
@@ -145,7 +147,7 @@ class openaiProvider:
         try:
             async for chunk in self.sendChatCompletions(request):
                 # 缓存请求的时候解除这里的屏蔽 然后就可以调试解析格式
-                if self._debugfile_write:
+                if self._cache:
                     yield chunk
                     continue
 
@@ -326,13 +328,11 @@ if __name__ == "__main__":
         print(provider)
         openai_interface = openaiProvider(api_key, base_url)
 
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        # 构造文件的绝对路径
-        modelnamefile = model_name.replace("/", "-")
-        openai_interface._debugfile_sse = os.path.join(current_dir + f"/debugdata/{modelnamefile}_sse.txt")
-        openai_interface._debugfile_data = os.path.join(current_dir + f"/debugdata/{modelnamefile}_data.txt")
-        # openai_interface._debugfile_write = True
+        openai_interface.setDebugSave(model_name)
         openai_interface._debug = True
+        openai_interface._cache = True
+
+
         # async for response in openai_interface.chat2api(RequestModel(
         #     model="glm-4-flash",
         #     messages=[Message(role="user", content="你好")],

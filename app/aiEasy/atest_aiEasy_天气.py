@@ -19,9 +19,7 @@ model = os.getenv('model', 'deepseek-coder')
 if not api_key or not base_url:
     raise ValueError("请在.env文件中设置OPENAI_API_KEY和OPENAI_BASE_URL")
 
-api_key = 'sk-cba57e89745545a7b3192a54e2b04e77'
-base_url = 'https://api.deepseek.com/v1'
-model = "deepseek-coder"
+
 client = OpenAI(
     api_key=api_key,  # API密钥
     base_url=base_url,  # 基础URL
