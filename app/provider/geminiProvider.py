@@ -1,5 +1,6 @@
 import asyncio
 import os
+import uuid
 
 import httpx
 from typing import Dict, Any, AsyncGenerator, Tuple
@@ -18,9 +19,6 @@ class geminiProvider:
         self.client = httpx.AsyncClient(
             base_url=self.base_url,
             headers={
-                "Content-Type": "application/json",
-                "Accept": "*/*",
-                "User-Agent": "curl/7.68.0",
             },
             timeout=httpx.Timeout(connect=15.0, read=600, write=30.0, pool=30.0),
             http2=False,  # 将 http2 设置为 False
@@ -62,11 +60,21 @@ class geminiProvider:
     async def sendChatCompletions(self, request: RequestModel) -> AsyncGenerator[str, None]:
         logger.name = f"geminiProvider.{request.id}.request.model"
         payload = await self.get_payload(request)
+        model = "gemini-1.5-flash"
+        gemini_stream = "streamGenerateContent" if request.stream else "generateContent"
+
+        if self.base_url.endswith("v1beta"):
+            url = "https://generativelanguage.googleapis.com/v1beta/models/{model}:{stream}?key={api_key}".format(
+                model=model, stream=gemini_stream, api_key=self.api_key)
+        elif self.base_url.endswith("v1"):
+            url = "https://generativelanguage.googleapis.com/v1/models/{model}:{stream}?key={api_key}".format(
+                model=model, stream=gemini_stream, api_key=self.api_key)
+        else:
+            url = f"{self.base_url}/models/{model}:{gemini_stream}?key={self.api_key}"
 
         if request.stream:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key={self.api_key}"
-        else:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}"
+            url += "&alt=sse"
+
         logger.info(f"\r\n发送 {url} \r\n请求体:\r\n{json.dumps(payload, indent=2, ensure_ascii=False)}")
 
         # 调试部分修改
@@ -123,34 +131,65 @@ class geminiProvider:
                     logger.error(f"Error closing debug file: {e}")
 
     async def get_payload(self, request: RequestModel) -> Dict[str, Any]:
-        contents = []
+        messages = []
+        systemInstruction = None
+        function_arguments = None
         for msg in request.messages:
-            parts = []
+            if msg.role == "assistant":
+                msg.role = "model"
+            tool_calls = None
             if isinstance(msg.content, list):
+                content = []
                 for item in msg.content:
                     if item.type == "text":
-                        parts.append({"text": item.text})
+                        text_message = {"text": item.text}
+                        content.append(text_message)
                     elif item.type == "image_url":
-                        parts.append({
-                            "inline_data": {
-                                "mime_type": "image/jpeg",  # 假设是JPEG格式,可能需要根据实际情况调整
-                                "data": item.image_url.url  # 这里可能需要将URL转换为base64编码的图像数据
-                            }
-                        })
+                        image_message = {"inline_data": {"mime_type": "image/jpeg", "data": item.image_url.url}}
+                        content.append(image_message)
             else:
-                parts.append({"text": msg.content})
+                content = [{"text": msg.content}]
+                tool_calls = msg.tool_calls
 
-            role = "user"
-            if msg.role == "system":
-                role = "model"
-            if msg.role == "assistant":
-                role = "model"
+            if tool_calls:
+                tool_call = tool_calls[0]
+                function_arguments = {
+                    "functionCall": {
+                        "name": tool_call.function.name,
+                        "args": json.loads(tool_call.function.arguments)
+                    }
+                }
+                messages.append(
+                    {
+                        "role": "model",
+                        "parts": [function_arguments]
+                    }
+                )
+            elif msg.role == "tool":
+                function_call_name = function_arguments["functionCall"]["name"]
+                messages.append(
+                    {
+                        "role": "function",
+                        "parts": [{
+                            "functionResponse": {
+                                "name": function_call_name,
+                                "response": {
+                                    "name": function_call_name,
+                                    "content": {
+                                        "result": msg.content,
+                                    }
+                                }
+                            }
+                        }]
+                    }
+                )
+            elif msg.role != "system":
+                messages.append({"role": msg.role, "parts": content})
+            elif msg.role == "system":
+                systemInstruction = {"parts": content}
 
-            contents.append({"role": role, "parts": parts})
-
-        topK = 40
         payload = {
-            "contents": contents,
+            "contents":  messages,
             "safetySettings": [
                 {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
                 {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
@@ -161,14 +200,27 @@ class geminiProvider:
                 "temperature": request.temperature if request.temperature is not None else 0.7,
                 "maxOutputTokens": request.max_tokens if request.max_tokens is not None else 8192,
                 "topP": request.top_p if request.top_p is not None else 0.95,
-                "topK": topK
-                # "topK": request.top_k if request.top_k is not None else 40
+                "topK": 40  # Gemini API 可能不支持自定义 top_k
             }
         }
+        if systemInstruction:
+            payload["system_instruction"] = systemInstruction
 
-        # 添加其他可能的配置参数
-        # if request.stop is not None:
-        #     payload["generationConfig"]["stopSequences"] = request.stop
+
+        for field, value in request.model_dump(exclude_unset=True).items():
+            if field == "tools" :
+                payload.update({
+                    "tools": [{
+                        "function_declarations": [tool["function"] for tool in value]
+                    }],
+                    "tool_config": {
+                        "function_calling_config": {
+                            "mode": "AUTO"
+                        }
+                    }
+                })
+
+
 
         return payload
 
@@ -183,11 +235,12 @@ class geminiProvider:
 
         if not request.stream:
             content = await self.extract_content(first_chunk)
-            await self.extract_usage(first_chunk)
+            # await self.extract_usage(first_chunk)
+            content = await build_openai_response(id, content, request_model_name, self.prompt_tokens,
+                                                  self.completion_tokens,
+                                                  self.total_tokens)
 
-            yield await build_openai_response(id, content, request_model_name, self.prompt_tokens,
-                                              self.completion_tokens, self.total_tokens)
-
+            yield content
             return
 
         # 流处理的代码
@@ -242,7 +295,7 @@ class geminiProvider:
         :param line: 数据行
         :return: 解析后的数据
 
-        解析后的数据类型
+        解析后的数据类型用于生成openai_response
         {"type": "content", "content": "你好"} # 内容
         {"type": "error", "content": ""} # 不返回就行
         {"type": "function_call", "function": {"name": "function_name", "arguments": "function_arguments"}} # 工具调用
@@ -282,19 +335,62 @@ class geminiProvider:
             logger.error(f"提取流内容时发生错误: {str(e)}")
             return {"type": "error", "content": str(e)}
 
-    async def extract_content(self, data: str) -> str:
+    async def extract_content(self, data: str) -> Dict[str, Any]:
         try:
             if isinstance(data, str):
-                data = json.loads(data)
-            # 使用jsonpath提取内容
-            content = jsonpath.jsonpath(data, "$.candidates[0].content.parts[0].text")
-            return content[0] if content else ""
+                json_data = json.loads(data)
+            else:
+                json_data = data
+
+            # 提取函数调用信息
+            function_calls = jsonpath.jsonpath(json_data, "$.candidates[0].content.parts[*].functionCall")
+
+            # 提取使用情况
+            usage = json_data.get("usageMetadata", {})
+
+            # 提取完成原因
+            finish_reason = json_data.get("candidates", [{}])[0].get("finishReason", "")
+
+            if function_calls:
+
+                tool_calls =[]
+                for func_call in function_calls:
+                    tool_calls.append({
+                        "id": uuid.uuid4().hex,
+                        "type": "function",
+                        "function": {
+                            "name": func_call["name"],
+                            "arguments": json.dumps(func_call["args"]),
+                        }
+                    })
+
+                return {"type": "function_call", "function": tool_calls}
+            elif finish_reason == "STOP":
+                # 完成
+                content = jsonpath.jsonpath(json_data, "$.candidates[0].content.parts[0].text")
+                content = content[0] if content else ""
+                return {
+                    "type": "stop",
+                    "content": content,
+                    "prompt_tokens": usage.get("promptTokenCount", 0),
+                    "completion_tokens": usage.get("candidatesTokenCount", 0),
+                    "total_tokens": usage.get("totalTokenCount", 0)
+                }
+            else:
+                # 普通内容
+                content = jsonpath.jsonpath(json_data, "$.candidates[0].content.parts[0].text")
+                content = content[0] if content else ""
+                return {
+                    "type": "content",
+                    "content": content
+                }
+
         except json.JSONDecodeError:
             logger.error(f"JSON解析错误,数据行: {data}")
-            return ""
+            return {"type": "error", "content": "JSON 解析错误"}
         except Exception as e:
             logger.error(f"提取内容时发生错误: {str(e)}")
-            return ""
+            return {"type": "error", "content": "数据解析错误"}
 
     async def extract_usage(self, data: str) -> Tuple[int, int, int]:
         try:
@@ -319,12 +415,12 @@ if __name__ == "__main__":
         provider = providers[0]
         print(provider)
         gemini_interface = geminiProvider(provider['api_key'], provider['base_url'])
-        gemini_interface.setDebugSave(provider['mapped_model'])
+        gemini_interface.setDebugSave("weather-geminia_" + provider['mapped_model'])
         gemini_interface._debug = True
         gemini_interface._cache = True
-     
+
         # 读取JSON文件
-        with open('./testdata/openai_fc.json', 'r', encoding='utf-8') as file:
+        with open('./testdata/openai_fc_2.json', 'r', encoding='utf-8') as file:
             data = json.load(file)
 
         try:
@@ -332,9 +428,12 @@ if __name__ == "__main__":
         except ValueError as e:
             print(f"验证错误: {e}")
 
-        # 使用创建的RequestModel对象
-        async for response in gemini_interface.chat(r):
-            logger.info("内容:" + response)
+        payload = await gemini_interface.get_payload(r)
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+
+        # async for response in gemini_interface.chat2api(r):
+        #     # logger.info(response)
+        #     print(json.dumps(response, indent=2, ensure_ascii=False))
 
 
     asyncio.run(main())

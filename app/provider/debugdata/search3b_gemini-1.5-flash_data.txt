@@ -1,0 +1,40 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "```json\n{\n    \"总结\": \"Laravel 是一个基于 PHP 的开源 Web 框架，以其优雅的语法和强大的功能而闻名。它旨在简化 Web 开发过程，提供各种工具和功能来构建现代、健壮的应用程序。Laravel 的核心特点包括：\\n\\n* **MVC 架构：**遵循 Model-View-Controller 架构，将应用程序逻辑、数据和用户界面分离，提高代码可维护性和可扩展性。\\n* **路由系统：**提供灵活的路由系统，可以轻松定义 URL 和控制器之间的映射关系。\\n* **数据库迁移：**支持数据库迁移功能，可以方便地管理数据库结构的变更。\\n* **模板引擎：**内置 Blade 模板引擎，提供简洁的语法和强大的功能，用于生成动态网页。\\n* **依赖注入：**使用依赖注入机制，可以轻松管理和测试应用程序的依赖关系。\\n* **安全机制：**提供各种安全机制，例如 SQL 注入保护、跨站脚本攻击 (XSS) 防护等。\\n* **丰富的生态系统：**拥有庞大的社区和丰富的扩展包，可以快速构建各种功能。\",\n    \"参考链接\": [\n        {\n            \"标题\": \"Laravel 官方网站\",\n            \"链接\": \"https://laravel.com/\"\n        },\n        {\n            \"标题\": \"Laravel 文档\",\n            \"链接\": \"https://laravel.com/docs/11.x/\"\n        }\n    ]\n}\n```"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0,
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE"
+        }
+      ]
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 255,
+    "candidatesTokenCount": 328,
+    "totalTokenCount": 583
+  }
+}
+

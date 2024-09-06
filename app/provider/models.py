@@ -31,7 +31,7 @@ class FunctionCall(BaseModel):
 
 class ToolCall(BaseModel):
     id: str
-    type: str
+    type: str  # 添加这一行
     function: FunctionCall
 
 class ImageUrl(BaseModel):

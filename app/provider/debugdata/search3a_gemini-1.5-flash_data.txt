@@ -5,18 +5,9 @@
         "parts": [
           {
             "functionCall": {
-              "name": "get_current_temperature",
+              "name": "search",
               "args": {
-                "location": "San Francisco, CA",
-                "unit": "Celsius"
-              }
-            }
-          },
-          {
-            "functionCall": {
-              "name": "get_rain_probability",
-              "args": {
-                "location": "San Francisco, CA"
+                "query": "laravel"
               }
             }
           }
@@ -27,11 +18,11 @@
       "index": 0,
       "safetyRatings": [
         {
-          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
           "probability": "NEGLIGIBLE"
         },
         {
-          "category": "HARM_CATEGORY_HARASSMENT",
+          "category": "HARM_CATEGORY_HATE_SPEECH",
           "probability": "NEGLIGIBLE"
         },
         {
@@ -39,16 +30,16 @@
           "probability": "NEGLIGIBLE"
         },
         {
-          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "category": "HARM_CATEGORY_HARASSMENT",
           "probability": "NEGLIGIBLE"
         }
       ]
     }
   ],
   "usageMetadata": {
-    "promptTokenCount": 158,
-    "candidatesTokenCount": 45,
-    "totalTokenCount": 203
+    "promptTokenCount": 72,
+    "candidatesTokenCount": 13,
+    "totalTokenCount": 85
   }
 }
 

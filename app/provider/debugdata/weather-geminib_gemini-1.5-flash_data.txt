@@ -1,0 +1,40 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "```json\n{\n    \"data\": [\n        {\n            \"temperature\": \"-7\",\n            \"unit\": \"Celsius\",\n            \"rain_probability\": \"68%\",\n            \"location\": \"San Francisco, CA\",\n            \"weather_description\": \"N/A\" \n        }\n    ]\n}\n```\n\n**Explanation:**\n\n* **temperature:**  The temperature is -7 degrees Celsius, as provided by the API.\n* **unit:** The unit of measurement is \"Celsius\", as specified in the API request.\n* **rain_probability:** The likelihood of rain is 68%, as provided by the API.\n* **location:** The location is \"San Francisco, CA\", as specified in the API request.\n* **weather_description:** The API doesn't provide a weather description, so it is set to \"N/A\". \n\n**Note:** To get a more detailed weather description, you would need to use a different API call or a different weather service. \n"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0,
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE"
+        }
+      ]
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 184,
+    "candidatesTokenCount": 216,
+    "totalTokenCount": 400
+  }
+}
+

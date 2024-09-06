@@ -46,9 +46,9 @@
     }
   ],
   "usageMetadata": {
-    "promptTokenCount": 158,
+    "promptTokenCount": 160,
     "candidatesTokenCount": 45,
-    "totalTokenCount": 203
+    "totalTokenCount": 205
   }
 }
 

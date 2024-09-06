@@ -26,7 +26,7 @@ class aiEasy:
         for name, param in sig.parameters.items():
             param_info = {
                 "type": "string",  # 默认类型为字符串
-                "description": f"param {name}"
+                "description": f"parameters {name}"
             }
 
             # 如果在options中定义了该参数的信息，则使用定义的信息
@@ -73,7 +73,7 @@ class aiEasy:
         for name, param in sig.parameters.items():
             parameters["properties"][name] = {
                 "type": "string",
-                "description": f"参数 {name}"
+                "description": ""
             }
             if param.default == inspect.Parameter.empty:
                 parameters["required"].append(name)
@@ -92,7 +92,7 @@ class aiEasy:
         self.prompt = prompt
 
     def chat(self, user_input, output=None, id=""):
-        output = "Output JSON Format: \r\n" + json.dumps(output, indent=4, ensure_ascii=False)
+        output = "using this JSON schema Output JSON Format: \r\n" + json.dumps(output, indent=4, ensure_ascii=False)
         input = f"question: {user_input}"
         # if output:
         #     input = f"{input}\r\n{output}"
@@ -171,7 +171,7 @@ class aiEasy:
             matches = re.findall(pattern, output_data, re.DOTALL)
             if matches:
                 output_data = '\n'.join(matches)
-            
+
             # 尝试解析JSON
             try:
                 output_data = json.loads(output_data)
@@ -185,7 +185,7 @@ class aiEasy:
                 except json.JSONDecodeError:
                     print("JSON 解析失败")
                     # 如果仍然失败，保留原始字符串
-            
+
             if not ok:
                 print("无法解析为JSON，保留原始输出")
 
