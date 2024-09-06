@@ -31,13 +31,17 @@ class geminiProvider:
         self.completion_tokens = 0
         self.total_tokens = 0
 
+        self._debug = True
+        self._cache = True
+        self.setDebugSave("gemini")
+
+    def setDebugSave(self, name="gemini"):
+        name = name.replace("/", "-")
         # 获取当前脚本所在的目录
         current_dir = os.path.dirname(os.path.abspath(__file__))
         # 构造文件的绝对路径
-        self._debugfile_sse = os.path.join(current_dir + "/debugdata/geminidata_sse.txt")
-        self._debugfile_data = os.path.join(current_dir, "/debugdata/geminidata_data.txt")
-        self._debugfile_write = False
-        self._debug = True
+        self._debugfile_sse = os.path.join(current_dir + f"/debugdata/{name}_sse.txt")
+        self._debugfile_data = os.path.join(current_dir + f"/debugdata/{name}_data.txt")
 
     async def _get_api_data(self, stream: bool, url: str, payload: Dict[str, Any]) -> AsyncGenerator[str, None]:
         if stream:
@@ -65,27 +69,35 @@ class geminiProvider:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}"
         logger.info(f"\r\n发送 {url} \r\n请求体:\r\n{json.dumps(payload, indent=2, ensure_ascii=False)}")
 
-        # 调试部分 不要看
+        # 调试部分修改
         debug_file = self._debugfile_sse if request.stream else self._debugfile_data
         if self._debug:
-            try:
-                if request.stream:
-                    with open(debug_file, "r") as f:
-                        for line in f:
-                            line = line.strip()
-                            if line:
-                                yield line
-                else:
-                    with open(debug_file, "r") as f:
-                        yield f.read()
-                if not self._debugfile_write:
-                    return
-            except FileNotFoundError:
-                logger.warning(f"Debug file {debug_file} not found, it will be created in write mode.")
+            error = False
+            if self._cache:
+                try:
+                    if request.stream:
+                        with open(debug_file, "r") as f:
+                            for line in f:
+                                line = line.strip()
+                                if line != "":
+                                    yield line
+                                    error = True
+                        return
+                    else:
+                        with open(debug_file, "r") as f:
+                            data = f.read()
+                            if data != "":
+                                yield data
+                                error = True
 
-        # Prepare to write to debug file if enabled
+                except FileNotFoundError:
+                    error = False
+                    logger.warning(f"Debug file {debug_file} not found, it will be created in write mode.")
+            if error:
+                return
+
         file_handle = None
-        if self._debugfile_write:
+        if self._cache:
             mode = 'w' if request.stream else 'a'
             try:
                 file_handle = open(debug_file, mode)
@@ -95,7 +107,7 @@ class geminiProvider:
         try:
             # 这里是真正的写的部分
             async for line in self._get_api_data(request.stream, url, payload):
-                if self._debugfile_write and file_handle:
+                if self._cache and file_handle:
                     try:
                         file_handle.write(line + "\n")
                     except IOError as e:
@@ -136,6 +148,7 @@ class geminiProvider:
 
             contents.append({"role": role, "parts": parts})
 
+        topK = 40
         payload = {
             "contents": contents,
             "safetySettings": [
@@ -148,7 +161,8 @@ class geminiProvider:
                 "temperature": request.temperature if request.temperature is not None else 0.7,
                 "maxOutputTokens": request.max_tokens if request.max_tokens is not None else 8192,
                 "topP": request.top_p if request.top_p is not None else 0.95,
-                "topK": request.top_k if request.top_k is not None else 40
+                "topK": topK
+                # "topK": request.top_k if request.top_k is not None else 40
             }
         }
 
@@ -304,29 +318,23 @@ if __name__ == "__main__":
         providers, error = await db.get_user_provider("sk-111111", "gemini-1.5-flash")
         provider = providers[0]
         print(provider)
-        openai_interface = geminiProvider(provider['api_key'], provider['base_url'])
-        openai_interface._debugfile_write = False
-        openai_interface._debug = True
-        r = RequestModel(
-            model="gemini-1.5-flash",
-            messages=[
-                Message(role="system", content="你叫冯宝宝，不管我问什么你的名字都是冯宝宝。"),
-                Message(role="user", content="你叫什么名字？"),
-            ],
-            stream=False,
-        )
-        # async for response in openai_interface.chat2api(r):
-        # 	if isinstance(response, bool):
-        # 		continue
-        # 	if isinstance(response, str):
-        # 		logger.info(response)
-        # 	else:
-        # 		logger.error(response)
+        gemini_interface = geminiProvider(provider['api_key'], provider['base_url'])
+        gemini_interface.setDebugSave(provider['mapped_model'])
+        gemini_interface._debug = True
+        gemini_interface._cache = True
+     
+        # 读取JSON文件
+        with open('./testdata/openai_fc.json', 'r', encoding='utf-8') as file:
+            data = json.load(file)
 
-        content = ""
-        async for response in openai_interface.chat(r):
-            content += response
-            logger.info("内容:" + content)
+        try:
+            r = RequestModel.parse_obj(data)
+        except ValueError as e:
+            print(f"验证错误: {e}")
+
+        # 使用创建的RequestModel对象
+        async for response in gemini_interface.chat(r):
+            logger.info("内容:" + response)
 
 
     asyncio.run(main())

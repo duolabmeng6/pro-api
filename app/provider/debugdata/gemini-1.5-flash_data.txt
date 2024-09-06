@@ -4,7 +4,7 @@
       "content": {
         "parts": [
           {
-            "text": "春风拂过，万物复苏，大地披上了一层嫩绿的新装。鸟儿欢快地歌唱，花儿争奇斗艳，空气中弥漫着泥土的芬芳和希望的味道。春雨滋润着万物，孕育着新的生命，为世界带来勃勃生机。 \n"
+            "text": "很抱歉，我无法提供实时天气信息。 \n\n要查询杭州的天气，您可以：\n\n* **使用天气应用程序：**  许多天气应用程序可以提供实时天气信息，例如 AccuWeather、WeatherBug 或 Google 天气。\n* **访问天气网站：**  许多天气网站提供实时天气信息，例如 Weather.com 或 AccuWeather.com。\n* **询问语音助手：**  您可以询问 Siri、Google Assistant 或 Alexa 杭州的天气。\n\n希望这些信息对您有所帮助！\n"
           }
         ],
         "role": "model"
@@ -32,9 +32,9 @@
     }
   ],
   "usageMetadata": {
-    "promptTokenCount": 8,
-    "candidatesTokenCount": 68,
-    "totalTokenCount": 76
+    "promptTokenCount": 5,
+    "candidatesTokenCount": 107,
+    "totalTokenCount": 112
   }
 }
 
