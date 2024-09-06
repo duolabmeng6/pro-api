@@ -91,7 +91,7 @@ class aiEasy:
     def setSystemPrompt(self, prompt):
         self.prompt = prompt
 
-    def chat(self, user_input, output=None):
+    def chat(self, user_input, output=None, id=""):
         output = "Output JSON Format: \r\n" + json.dumps(output, indent=4, ensure_ascii=False)
         input = f"question: {user_input}"
         # if output:
@@ -103,11 +103,15 @@ class aiEasy:
         ]
         print(f"send 1: 第一次")
         print(f"{input}")
+
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
             tools=self.tools,
             tool_choice="auto",
+            extra_headers={
+                "id": id + "a"
+            }
             # response_format={
             #     'type': 'json_object'
             # }
@@ -122,7 +126,16 @@ class aiEasy:
                 function_name = tool_call.function.name
                 function_args = json.loads(tool_call.function.arguments)
                 print(f"调用函数: {function_name}, 参数: {function_args}")
-                function_response = self.available_functions[function_name](**function_args)
+                # 这里需要做一些容错处理 检查函数是否存在
+                if function_name not in self.available_functions:
+                    print(f"函数 {function_name} 不存在")
+                    continue
+                else:
+                    try:
+                        function_response = self.available_functions[function_name](**function_args)
+                    except Exception as e:
+                        print(f"函数 {function_name} 调用失败: {e}")
+                        function_response = f"函数 {function_name} 调用失败"
 
                 messages.append({
                     "tool_call_id": tool_call.id,
@@ -140,6 +153,9 @@ class aiEasy:
                 messages=messages,
                 response_format={
                     'type': 'json_object'
+                },
+                extra_headers={
+                    "id": id + "b"
                 }
             )
             output_data = second_response.choices[0].message.content

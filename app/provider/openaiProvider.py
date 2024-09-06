@@ -1,6 +1,7 @@
 import asyncio
 import os
 import uuid
+from http.client import responses
 from logging import DEBUG
 
 import httpx
@@ -10,6 +11,7 @@ from app.provider.models import RequestModel, Message
 import ujson as json
 from app.help import generate_sse_response, build_openai_response
 from app.log import logger
+import jsonpath
 
 
 class openaiProvider:
@@ -23,11 +25,17 @@ class openaiProvider:
                 "Content-Type": "application/json",
                 "Accept": "*/*",
                 "User-Agent": "curl/7.68.0",
+
             },
             timeout=httpx.Timeout(connect=15.0, read=600, write=30.0, pool=30.0),
-            http2=False,  # 将 http2 设置为 False
-            verify=True,
-            follow_redirects=True,
+            # http2=False,  # 将 http2 设置为 False
+            # verify=False,
+            # follow_redirects=True,
+            #
+            # proxies={  # 使用字典形式来指定不同类型的代理
+            #     "http://": "http://127.0.0.1:8888",
+            #     "https://": "http://127.0.0.1:8888",  # 如果代理服务器支持 HTTP 和 HTTPS，则可以这样设置
+            # },
         )
         self.prompt_tokens = 0
         self.completion_tokens = 0
@@ -59,7 +67,10 @@ class openaiProvider:
                             yield line
         else:
             # Non-streamed request
-            response = await self.client.post(url, json=payload)
+            response = await self.client.post(url, headers={
+                "Content-Type": "application/json",
+                "authorization": f"Bearer {self.api_key}",
+            }, json=payload)
             await self.raise_for_status(response)
             response_text = response.content.decode("utf-8")
             yield response_text
@@ -72,22 +83,36 @@ class openaiProvider:
         logger.info(f"\r\nsend {url} \r\nbody:\r\n{json.dumps(payload, indent=2, ensure_ascii=False)}")
 
         # 调试部分 不要看
+        debug_file = self._debugfile_sse if request.stream else self._debugfile_data
         if self._debug:
-            debug_file = self._debugfile_sse if request.stream else self._debugfile_data
+            error = False
             if self._cache:
                 try:
-                    with open(debug_file, "r") as f:
-                        for line in f:
-                            line = line.strip()
-                            if line != "":
-                                yield line
-                    return
+                    if request.stream:
+                        with open(debug_file, "r") as f:
+                            for line in f:
+                                line = line.strip()
+                                if line != "":
+                                    yield line
+                                    error = True
+                        return
+                    else:
+                        with open(debug_file, "r") as f:
+                            data = f.read()
+                            if data != "":
+                                yield data
+                                error = True
+
                 except FileNotFoundError:
+                    error = False
                     logger.warning(f"Debug file {debug_file} not found, it will be created in write mode.")
+            if error:
+                return
 
         file_handle = None
         if self._cache:
             mode = 'w' if request.stream else 'a'
+            # 清空文件
             try:
                 file_handle = open(debug_file, mode)
             except IOError as e:
@@ -122,26 +147,27 @@ class openaiProvider:
 
         if not request.stream:
             content = await self.extract_content(first_chunk)
-            await self.extract_usage(first_chunk)
+            # await self.extract_usage(first_chunk)
+            content = await build_openai_response(id, content, request_model_name, self.prompt_tokens, self.completion_tokens,
+                                         self.total_tokens)
 
-            yield await build_openai_response(id, content, request_model_name, self.prompt_tokens,
-                                              self.completion_tokens, self.total_tokens)
+            yield content
 
             return
 
-        # 流处理的代码
-        yield True
-        yield await generate_sse_response(id, request_model_name)
-        content = await self.extract_content_stream(first_chunk)
-        yield await generate_sse_response(id, request_model_name, content=content)
-        async for chunk in genData:
-            content = await self.extract_content_stream(chunk)
-            if isinstance(content, dict):
-                if "error" in content['type']:
-                    logger.error(f"发生错误: {content['error']}")
-                    continue
-
+            # 流处理的代码
+            yield True
+            yield await generate_sse_response(id, request_model_name)
+            content = await self.extract_content_stream(first_chunk)
             yield await generate_sse_response(id, request_model_name, content=content)
+            async for chunk in genData:
+                content = await self.extract_content_stream(chunk)
+                if isinstance(content, dict):
+                    if "error" in content['type']:
+                        logger.error(f"发生错误: {content['error']}")
+                        continue
+
+                yield await generate_sse_response(id, request_model_name, content=content)
 
     async def chat(self, request: RequestModel) -> AsyncGenerator[str, None]:
         try:
@@ -201,15 +227,24 @@ class openaiProvider:
             return {"type": "end", "content": "[DONE]"}
         if not data:
             return {"type": "error", "content": "空数据"}
+        return await self.extract_content(data)
 
+    async def extract_content(self, data: str) -> Dict[str, Any]:
         try:
             json_data = json.loads(data)
 
-            # 直接访问嵌套字典，而不使用 jsonpath
-            content = json_data.get("choices", [{}])[0].get("delta", {}).get("content", "")
-            finish_reason = json_data.get("choices", [{}])[0].get("finish_reason")
-            tool_calls = json_data.get("choices", [{}])[0].get("delta", {}).get("tool_calls")
-            usage = json_data.get("usage", {})
+            # 修改JSON路径以适应新的结构
+            content = jsonpath.jsonpath(json_data, '$.choices[0].message.content') or [""]
+            content = content[0]
+            finish_reason = jsonpath.jsonpath(json_data, '$.choices[0].finish_reason') or [None]
+            finish_reason = finish_reason[0]
+            tool_calls = jsonpath.jsonpath(json_data, '$.choices[0].message.tool_calls') or [None]
+            tool_calls = tool_calls[0]
+            usage = jsonpath.jsonpath(json_data, '$.usage') or [{}]
+            usage = usage[0]
+
+            if finish_reason == "tool_calls" and tool_calls:
+                return {"type": "function_call", "function": tool_calls}
 
             if finish_reason == "stop":
                 self.prompt_tokens = usage.get("prompt_tokens", 0)
@@ -223,23 +258,10 @@ class openaiProvider:
                     "total_tokens": self.total_tokens
                 }
 
-            if not content and tool_calls:
-                return {"type": "function_call", "function": tool_calls[0]}
-
             return {"type": "content", "content": content}
         except Exception as e:
-            logger.error(f"extract_content_stream 数据解析错误:\r\n{data} \r\n错误:\r\n{e}")
+            logger.error(f"extract_content 数据解析错误:\r\n{data} \r\n错误:\r\n{e}")
             return {"type": "error", "content": "JSON 解析错误"}
-
-    async def extract_content(self, data: str) -> str:
-        try:
-            if isinstance(data, str):
-                data = json.loads(data)
-            content = data["choices"][0]["message"]["content"]
-            return content
-        except json.JSONDecodeError:
-            logger.error(f"JSON decode error for line: {data}")
-            return ""
 
     async def extract_usage(self, data: str) -> Tuple[int, int, int]:
         try:
@@ -318,8 +340,9 @@ if __name__ == "__main__":
         db = Database("../api.yaml")
         # model_name = "glm-4-flash"
         model_name = "doubao-pro-128k"
-        model_name = "moonshot-v1-128k"
-        model_name = "qwen2-72b"
+        # model_name = "moonshot-v1-128k"
+        # model_name = "qwen2-72b"
+        # model_name = "deepseek-coder"
         providers, error = await db.get_user_provider("sk-111111", model_name)
         provider = providers[0]
         api_key = provider['api_key']
@@ -328,10 +351,9 @@ if __name__ == "__main__":
         print(provider)
         openai_interface = openaiProvider(api_key, base_url)
 
-        openai_interface.setDebugSave(model_name)
+        openai_interface.setDebugSave( model_name)
         openai_interface._debug = True
         openai_interface._cache = True
-
 
         # async for response in openai_interface.chat2api(RequestModel(
         #     model="glm-4-flash",
@@ -346,13 +368,14 @@ if __name__ == "__main__":
         #         logger.error(response)
 
         content = ""
-        async for response in openai_interface.chat(RequestModel(
+        async for response in openai_interface.chat2api(RequestModel(
                 model=model_name,
                 messages=[Message(role="user", content="请用三句话描述春天。")],
-                stream=True,
+                stream=False,
         )):
-            content += response
-            logger.info("收到:" + content)
+            # content += response
+            # logger.info( response)
+            logger.info(response)
 
 
     asyncio.run(main())

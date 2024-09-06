@@ -1,9 +1,13 @@
 import sys
 import os
+from typing import Dict
+
+from urllib3 import request
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, Depends, HTTPException, Request, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
@@ -18,7 +22,6 @@ from database import Database
 import uuid
 
 db = Database(os.path.join(os.path.dirname(__file__), './api.yaml'))
-
 
 
 @asynccontextmanager
@@ -75,16 +78,18 @@ def getProvider(provider):
 @app.post("/v1/chat/completions")
 async def chat_completions(
         request: RequestModel,
-        api_key: str = Depends(verify_api_key)
+        api_key: str = Depends(verify_api_key),
+        req: Request = Request
 ):
     # 检查api_key和当前的请求的model是有可用模型
     providers, error = await db.get_user_provider(api_key, request.model)
     if not providers:
         raise HTTPException(status_code=500, detail=error)
     provider = providers[0]
-
+    # 获取header信息
+    headers = dict(req.headers)
     id = str(uuid.uuid4())
-    request.id = id
+    request.id = headers.get("id", id)
     logger.name = f"main.{request.id}"
     logger.info(
         f"服务提供者:{provider['provider']} 请求模型:{request.model} 当前模型:{provider.get('mapped_model')} 名称:{provider.get('name')} \r\n 请求内容:\r\n{request.model_dump_json(indent=2)}")
@@ -93,7 +98,7 @@ async def chat_completions(
     # 创建openai接口
     ai_provider = ai_provider_class(provider.get("api_key"), provider.get("base_url"))
 
-    ai_provider.setDebugSave(provider.get('mapped_model'))
+    ai_provider.setDebugSave(request.id + "_" + provider.get('mapped_model'))
     ai_provider._cache = True
     ai_provider._debug = True
 
