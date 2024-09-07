@@ -124,17 +124,6 @@ class openaiProvider:
         logger.info(f"SSE 数据流迭代完成，统计信息：{stats_data}")
         # logger.info(f"转换为普通：{handler.generate_response()}")
 
-    async def raise_for_status(self, response: httpx.Response):
-        if response.status_code == 200:
-            return
-        response_content = await response.aread()
-        error_data = {
-            "error": "上游服务器出现错误",
-            "response_body": response_content.decode("utf-8"),
-            "status_code": response.status_code
-        }
-        raise HTTPException(status_code=500, detail=error_data)
-
 
 
 if __name__ == "__main__":
