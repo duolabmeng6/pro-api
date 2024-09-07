@@ -1,17 +1,16 @@
 import asyncio
 import os
-import uuid
-from http.client import responses
-from logging import DEBUG
-
+import time
 import httpx
 from typing import Dict, Any, AsyncGenerator, Tuple
 from fastapi import HTTPException
 from app.provider.models import RequestModel, Message
 import ujson as json
-from app.help import generate_sse_response, build_openai_response
 from app.log import logger
 import jsonpath
+
+from app.provider.openaiSSEHandler import openaiSSEHandler
+
 
 
 class openaiProvider:
@@ -37,9 +36,7 @@ class openaiProvider:
             #     "https://": "http://127.0.0.1:8888",  # 如果代理服务器支持 HTTP 和 HTTPS，则可以这样设置
             # },
         )
-        self.prompt_tokens = 0
-        self.completion_tokens = 0
-        self.total_tokens = 0
+        self.DataHeadler = openaiSSEHandler
 
         self._debug = True
         self._cache = True
@@ -65,6 +62,7 @@ class openaiProvider:
                         line = line.strip()
                         if line.startswith('data:'):  # 只处理 SSE 数据行
                             yield line
+                yield "[DONE]"
         else:
             # Non-streamed request
             response = await self.client.post(url, headers={
@@ -128,6 +126,8 @@ class openaiProvider:
                         logger.error(f"Error writing to debug file: {e}")
                 logger.info(f"收到数据\r\n{line}")
                 yield line
+
+
         finally:
             # Ensure file closure
             if file_handle:
@@ -145,51 +145,31 @@ class openaiProvider:
         except Exception as e:
             raise HTTPException(status_code=404, detail=e)
 
+        self.DataHeadler = openaiSSEHandler(id, request_model_name)
         if not request.stream:
-            content = await self.extract_content(first_chunk)
-            # await self.extract_usage(first_chunk)
-            content = await build_openai_response(id, content, request_model_name, self.prompt_tokens, self.completion_tokens,
-                                         self.total_tokens)
-
-            yield content
-
+            yield self.DataHeadler.handle_data_line(first_chunk)
+            stats_data = self.DataHeadler.get_stats()
+            logger.info(f"SSE 数据流迭代完成，统计信息：{stats_data}")
             return
 
-            # 流处理的代码
-            yield True
-            yield await generate_sse_response(id, request_model_name)
-            content = await self.extract_content_stream(first_chunk)
-            yield await generate_sse_response(id, request_model_name, content=content)
-            async for chunk in genData:
-                content = await self.extract_content_stream(chunk)
-                if isinstance(content, dict):
-                    if "error" in content['type']:
-                        logger.error(f"发生错误: {content['error']}")
-                        continue
+        # 流处理的代码
+        yield True
+        yield "data: " + self.DataHeadler.generate_sse_response(None)
+        content = self.DataHeadler.handle_SSE_data_line(first_chunk)
+        if content:
+            yield "data: " + content
+        async for chunk in genData:
+            content = self.DataHeadler.handle_SSE_data_line(chunk)
+            if content == "[DONE]":
+                yield "data: [DONE]"
+                break
+            if content:
+                yield "data: " + content
+        stats_data = self.DataHeadler.get_stats()
+        logger.info(f"SSE 数据流迭代完成，统计信息：{stats_data}")
+        # logger.info(f"转换为普通：{handler.generate_response()}")
 
-                yield await generate_sse_response(id, request_model_name, content=content)
 
-    async def chat(self, request: RequestModel) -> AsyncGenerator[str, None]:
-        try:
-            async for chunk in self.sendChatCompletions(request):
-                # 缓存请求的时候解除这里的屏蔽 然后就可以调试解析格式
-                if self._cache:
-                    yield chunk
-                    continue
-
-                if request.stream:
-                    content = await self.extract_content_stream(chunk)
-                    if content['type'] == 'content':
-                        yield content['content']
-                    elif content['type'] == 'stop':
-                        break
-                else:
-                    content = await self.extract_content(chunk)
-                    yield content
-                    break
-        except Exception as e:
-            logger.error(f"聊天过程中发生错误: {str(e)}")
-            raise HTTPException(status_code=500, detail=str(e))
 
     async def raise_for_status(self, response: httpx.Response):
         if response.status_code == 200:
@@ -202,79 +182,6 @@ class openaiProvider:
         }
         raise HTTPException(status_code=500, detail=error_data)
 
-    async def extract_content_stream(self, line: str) -> Dict[str, Any]:
-        """
-        解析SSE流数据行提取
-        :param line: 数据行
-        :return: 解析后的数据
-
-        解析后的数据类型
-        {"type": "content", "content": "你好"} # 内容
-        {"type": "error", "content": ""} # 不返回就行
-        {"type": "function_call", "function": {"name": "function_name", "arguments": "function_arguments"}} # 工具调用
-        {"type": "stop", "content": "你好", "prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20} # 完成
-        {"type": "end", "content": "[DONE]"} # 结束
-        """
-
-        data = ""
-        # 处理不同格式的数据行
-        if line.startswith("data: "):
-            data = line[6:]
-        elif line.startswith("data:"):
-            data = line[5:]
-
-        if data == "[DONE]":
-            return {"type": "end", "content": "[DONE]"}
-        if not data:
-            return {"type": "error", "content": "空数据"}
-        return await self.extract_content(data)
-
-    async def extract_content(self, data: str) -> Dict[str, Any]:
-        try:
-            json_data = json.loads(data)
-
-            # 修改JSON路径以适应新的结构
-            content = jsonpath.jsonpath(json_data, '$.choices[0].message.content') or [""]
-            content = content[0]
-            finish_reason = jsonpath.jsonpath(json_data, '$.choices[0].finish_reason') or [None]
-            finish_reason = finish_reason[0]
-            tool_calls = jsonpath.jsonpath(json_data, '$.choices[0].message.tool_calls') or [None]
-            tool_calls = tool_calls[0]
-            usage = jsonpath.jsonpath(json_data, '$.usage') or [{}]
-            usage = usage[0]
-
-            if finish_reason == "tool_calls" and tool_calls:
-                return {"type": "function_call", "function": tool_calls}
-
-            if finish_reason == "stop":
-                self.prompt_tokens = usage.get("prompt_tokens", 0)
-                self.completion_tokens = usage.get("completion_tokens", 0)
-                self.total_tokens = usage.get("total_tokens", 0)
-                return {
-                    "type": "stop",
-                    "content": content,
-                    "prompt_tokens": self.prompt_tokens,
-                    "completion_tokens": self.completion_tokens,
-                    "total_tokens": self.total_tokens
-                }
-
-            return {"type": "content", "content": content}
-        except Exception as e:
-            logger.error(f"extract_content 数据解析错误:\r\n{data} \r\n错误:\r\n{e}")
-            return {"type": "error", "content": "JSON 解析错误"}
-
-    async def extract_usage(self, data: str) -> Tuple[int, int, int]:
-        try:
-            if isinstance(data, str):
-                data = json.loads(data)
-            usage = data.get("usage", {})
-            self.prompt_tokens = usage.get("prompt_tokens", 0)
-            self.completion_tokens = usage.get("completion_tokens", 0)
-            self.total_tokens = usage.get("total_tokens", 0)
-            return self.prompt_tokens, self.completion_tokens, self.total_tokens
-        except Exception as e:
-            logger.error(f"JSON 解析错误，数据行：{data}")
-            return 0, 0, 0
 
     async def get_payload(self, request: RequestModel) -> Dict[str, Any]:
         messages = []
@@ -338,44 +245,35 @@ if __name__ == "__main__":
     async def main():
         from app.database import Database
         db = Database("../api.yaml")
-        # model_name = "glm-4-flash"
-        model_name = "doubao-pro-128k"
-        # model_name = "moonshot-v1-128k"
-        # model_name = "qwen2-72b"
-        # model_name = "deepseek-coder"
-        providers, error = await db.get_user_provider("sk-111111", model_name)
-        provider = providers[0]
-        api_key = provider['api_key']
-        base_url = provider['base_url']
-        model_name = provider['mapped_model']
-        print(provider)
-        openai_interface = openaiProvider(api_key, base_url)
+        model_test = [
+             "glm-4-flash",
+             "doubao-pro-128k",
+             "moonshot-v1-128k",
+             "qwen2-72b",
+             "deepseek-coder"
+        ]
+        for model_name in model_test:
+            providers, error = await db.get_user_provider("sk-111111", model_name)
+            provider = providers[0]
+            api_key = provider['api_key']
+            base_url = provider['base_url']
+            model_name = provider['mapped_model']
+            # print(provider)
+            print("正在测试", model_name)
+            openai_interface = openaiProvider(api_key, base_url)
+            openai_interface.setDebugSave(f"{model_name}_{provider['provider']}")
+            openai_interface._debug = True
+            openai_interface._cache = True
 
-        openai_interface.setDebugSave( model_name)
-        openai_interface._debug = True
-        openai_interface._cache = True
-
-        # async for response in openai_interface.chat2api(RequestModel(
-        #     model="glm-4-flash",
-        #     messages=[Message(role="user", content="你好")],
-        #     stream=True,
-        # )):
-        #     if isinstance(response, bool):
-        #         continue
-        #     if isinstance(response, str):
-        #         logger.info(response)
-        #     else:
-        #         logger.error(response)
-
-        content = ""
-        async for response in openai_interface.chat2api(RequestModel(
-                model=model_name,
-                messages=[Message(role="user", content="请用三句话描述春天。")],
-                stream=False,
-        )):
-            # content += response
-            # logger.info( response)
-            logger.info(response)
+            content = ""
+            async for response in openai_interface.chat2api(RequestModel(
+                    model=model_name,
+                    messages=[Message(role="user", content="请用三句话描述春天。")],
+                    stream=True,
+            )):
+                # content += response
+                # logger.info( response)
+                logger.info(response)
 
 
     asyncio.run(main())

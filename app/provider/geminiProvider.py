@@ -1,15 +1,92 @@
 import asyncio
 import os
+import time
 import uuid
-
 import httpx
 from typing import Dict, Any, AsyncGenerator, Tuple
 from fastapi import HTTPException
 from app.provider.models import RequestModel, Message
 import ujson as json
-from app.help import generate_sse_response, build_openai_response
 from app.log import logger
 import jsonpath
+
+
+async def build_openai_response(id: str, response_data: dict, model: str, prompt_tokens: int, completion_tokens: int,
+                                total_tokens=int):
+    current_timestamp = int(time.time())
+    response = {
+        "id": id,
+        "object": "chat.completion",
+        "created": current_timestamp,
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                },
+                "logprobs": None,
+                "finish_reason": None
+            }
+        ],
+        "usage": {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens,
+        },
+        "system_fingerprint": ""
+    }
+
+    if response_data['type'] == 'content':
+        response["choices"][0]["message"]["content"] = response_data['content']
+        response["choices"][0]["finish_reason"] = "stop"
+    elif response_data['type'] == 'function_call':
+        response["choices"][0]["message"]["tool_calls"] = response_data['function']
+        response["choices"][0]["finish_reason"] = "tool_calls"
+    if response_data['type'] == 'stop':
+        response["choices"][0]["message"]["content"] = response_data['content']
+        response["choices"][0]["finish_reason"] = "stop"
+
+    return response
+
+
+async def generate_sse_response(id, model, content=None):
+    current_timestamp = int(time.time())
+    chunk = {
+        "id": f"chatcmpl-{id}",
+        "object": "chat.completion.chunk",
+        "created": current_timestamp,
+        "model": model,
+        "system_fingerprint": "",
+        "choices": [
+            {
+                "index": 0,
+                "delta": {},
+                "logprobs": None,
+                "finish_reason": None
+            }
+        ]
+    }
+
+    if content is None:
+        chunk["choices"][0]["delta"] = {"role": "assistant", "content": ""}
+    elif content['type'] == 'content':
+        chunk["choices"][0]["delta"] = {"content": content['content']}
+    elif content['type'] == 'stop':
+        chunk["choices"][0]["delta"] = {}
+        chunk["choices"][0]["finish_reason"] = "stop"
+        chunk["usage"] = {
+            "prompt_tokens": content.get('prompt_tokens', 0),
+            "completion_tokens": content.get('completion_tokens', 0),
+            "total_tokens": content.get('total_tokens', 0)
+        }
+    elif content['type'] == 'end':
+        return "data: [DONE]"
+    else:
+        return None
+
+    json_data = json.dumps(chunk, ensure_ascii=False)
+    return f"data: {json_data}\n\n"
 
 
 class geminiProvider:
@@ -60,9 +137,8 @@ class geminiProvider:
     async def sendChatCompletions(self, request: RequestModel) -> AsyncGenerator[str, None]:
         logger.name = f"geminiProvider.{request.id}.request.model"
         payload = await self.get_payload(request)
-        model = "gemini-1.5-flash"
+        model = request.model
         gemini_stream = "streamGenerateContent" if request.stream else "generateContent"
-
         if self.base_url.endswith("v1beta"):
             url = "https://generativelanguage.googleapis.com/v1beta/models/{model}:{stream}?key={api_key}".format(
                 model=model, stream=gemini_stream, api_key=self.api_key)
@@ -189,7 +265,7 @@ class geminiProvider:
                 systemInstruction = {"parts": content}
 
         payload = {
-            "contents":  messages,
+            "contents": messages,
             "safetySettings": [
                 {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
                 {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
@@ -206,9 +282,8 @@ class geminiProvider:
         if systemInstruction:
             payload["system_instruction"] = systemInstruction
 
-
         for field, value in request.model_dump(exclude_unset=True).items():
-            if field == "tools" :
+            if field == "tools":
                 payload.update({
                     "tools": [{
                         "function_declarations": [tool["function"] for tool in value]
@@ -219,8 +294,6 @@ class geminiProvider:
                         }
                     }
                 })
-
-
 
         return payload
 
@@ -353,7 +426,7 @@ class geminiProvider:
 
             if function_calls:
 
-                tool_calls =[]
+                tool_calls = []
                 for func_call in function_calls:
                     tool_calls.append({
                         "id": uuid.uuid4().hex,

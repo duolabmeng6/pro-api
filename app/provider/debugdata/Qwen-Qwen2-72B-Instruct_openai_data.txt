@@ -1,0 +1,1 @@
+{"id":"0191cadf8fa43d00ffbc826186995736","object":"chat.completion","created":1725685534,"model":"Qwen/Qwen2-72B-Instruct","choices":[{"index":0,"message":{"role":"assistant","content":"春天是万物复苏的季节，草木萌发，万物更新；春风拂面，温暖宜人，令人心情愉悦；春雨绵绵，滋润大地，带来勃勃生机。"},"finish_reason":"stop"}],"usage":{"prompt_tokens":26,"completion_tokens":40,"total_tokens":66},"system_fingerprint":""}

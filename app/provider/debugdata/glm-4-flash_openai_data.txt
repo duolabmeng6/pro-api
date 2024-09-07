@@ -1,0 +1,1 @@
+{"choices":[{"finish_reason":"stop","index":0,"message":{"content":"春天万物复苏，花开满园；阳光明媚，微风拂面；生机勃勃，一片盎然。","role":"assistant"}}],"created":1725685527,"id":"202409071305255b960c7a27eb44dc","model":"glm-4-flash","request_id":"202409071305255b960c7a27eb44dc","usage":{"completion_tokens":24,"prompt_tokens":12,"total_tokens":36}}
