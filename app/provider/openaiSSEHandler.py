@@ -15,10 +15,10 @@ class openaiSSEHandler:
         self.tool_calls = []  # 新增: 用于存储完整的工具调用信息
 
 
-    def generate_response(self, content=None):
+    def generate_response(self):
         chunk = {
             "id": self.custom_id,
-            "object": "chat.completion.chunk",
+            "object": "chat.completion",
             "created": int(time.time()),
             "model": self.model,
             "choices": [
@@ -39,8 +39,8 @@ class openaiSSEHandler:
             }
         }
 
-        json_data = json.dumps(chunk, ensure_ascii=False)
-        return f"data: {json_data}\n\n"
+        # json_data = json.dumps(chunk, ensure_ascii=False)
+        return chunk
     
     def generate_sse_response(self, content=None):
         current_timestamp = int(time.time())
@@ -215,21 +215,19 @@ class openaiSSEHandler:
 
 
 if __name__ == "__main__":
-    # testFIleList = [
-    #     "./debugdata/zpqydata_data.txt",
-    #     "./debugdata/searcha_deepseek-coder_data.txt",
-    #     "./debugdata/searchb_deepseek-coder_data.txt",
-    # ]
-    # for file_name in testFIleList:
-    #     print("正在检查：", file_name)
-    #     handler = openaiSSEHandler(custom_id=file_name)
-    #     with open(file_name, "r", encoding="utf-8") as file:
-    #         filedata = file.read()
-    #         out = handler.handle_data_line(filedata)
-    #         print(out)
-    #         print("文件统计信息：", json.dumps(handler.get_stats(), ensure_ascii=False, indent=4))
-    #
-    # exit()
+    testFIleList = [
+        "./debugdata/weather-gemini1a_deepseek-coder_openai_data.txt",
+    ]
+    for file_name in testFIleList:
+        print("正在检查：", file_name)
+        handler = openaiSSEHandler(custom_id=file_name)
+        with open(file_name, "r", encoding="utf-8") as file:
+            filedata = file.read()
+            out = handler.handle_data_line(filedata)
+            print(out)
+            print("文件统计信息：", json.dumps(handler.get_stats(), ensure_ascii=False, indent=4))
+
+    exit()
     def autotest(name,stream=False):
         testFIleList = [
         ]

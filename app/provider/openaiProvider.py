@@ -147,7 +147,8 @@ class openaiProvider:
 
         self.DataHeadler = openaiSSEHandler(id, request_model_name)
         if not request.stream:
-            yield self.DataHeadler.handle_data_line(first_chunk)
+            content = self.DataHeadler.handle_data_line(first_chunk)
+            yield content
             stats_data = self.DataHeadler.get_stats()
             logger.info(f"SSE 数据流迭代完成，统计信息：{stats_data}")
             return

@@ -98,7 +98,7 @@ async def chat_completions(
     # 创建openai接口
     ai_provider = ai_provider_class(provider.get("api_key"), provider.get("base_url"))
 
-    ai_provider.setDebugSave(request.id + "_" + provider.get('mapped_model'))
+    ai_provider.setDebugSave(f"{request.id}_{provider.get('mapped_model')}_{provider.get('provider')}")
     ai_provider._cache = True
     ai_provider._debug = True
 
