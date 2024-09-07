@@ -1,0 +1,1 @@
+{"choices":[{"finish_reason":"stop","index":0,"message":{"content":"春回大地，万物复苏，花开满园；春风拂面，生机盎然，景色宜人；春雨滋润，田野翠绿，农事繁忙。","role":"assistant"}}],"created":1725704055,"id":"202409071814131986a980f3ed4581","model":"glm-4-flash","request_id":"202409071814131986a980f3ed4581","usage":{"completion_tokens":38,"prompt_tokens":12,"total_tokens":50}}
