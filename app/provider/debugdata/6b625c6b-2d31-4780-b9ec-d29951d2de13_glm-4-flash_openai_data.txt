@@ -1,0 +1,1 @@
+{"choices":[{"finish_reason":"stop","index":0,"message":{"content":"春天是万物复苏的季节，花开满园，绿意盎然；春风拂面，暖阳照耀，心情愉悦；春雨绵绵，滋润大地，生机勃勃。","role":"assistant"}}],"created":1725705625,"id":"20240907184023e0c479b5a46e4747","model":"glm-4-flash","request_id":"20240907184023e0c479b5a46e4747","usage":{"completion_tokens":39,"prompt_tokens":12,"total_tokens":51}}

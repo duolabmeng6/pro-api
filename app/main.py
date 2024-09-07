@@ -1,6 +1,7 @@
 import json
 import sys
 import os
+from types import SimpleNamespace
 from typing import Dict
 
 from urllib3 import request
@@ -25,6 +26,10 @@ import uuid
 db = Database(os.path.join(os.path.dirname(__file__), './api.yaml'))
 
 
+
+
+
+    
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("服务器启动")
@@ -104,17 +109,18 @@ async def chat_completions(
     # 获取用户提交的完整body信息
     body = await req.body()
     body = json.loads(body)
-    body = json.dumps(body, ensure_ascii=False,indent=4)
-    pyefun.文件_保存(f"./provider/sendbody/{provider.get('provider')}_{request.id}_{request.model}.txt",body)
+    body2 = json.dumps(body, ensure_ascii=False,indent=4)
+    pyefun.文件_保存(f"./provider/sendbody/{provider.get('provider')}_{request.id}_{request.model}.txt",body2)
     
-    ai_provider.setDebugSave(f"{request.id}_{provider.get('mapped_model')}_{provider.get('provider')}")
+    ai_provider.setDebugSave(f"{provider.get('mapped_model')}_{provider.get('provider')}")
     ai_provider._cache = True
     ai_provider._debug = True
 
     request_model_name = request.model  # 保存请求时候的模型名称
     request.model = provider.get("mapped_model")  # 映射为正确的名称
+    body["model"] = provider.get("mapped_model")  # 映射为正确的名称
     # 发送请求
-    genData = ai_provider.chat2api(request, request_model_name, id)
+    genData = ai_provider.chat2api(body, request_model_name, id)
     # 得到转发数据
     first_chunk = await genData.__anext__()
 
@@ -126,7 +132,7 @@ async def chat_completions(
         async def generate_stream():
             async for chunk in genData:
                 logger.info(f"发送到客户端\r\n{chunk}")
-                yield chunk
+                yield chunk + "\r\n\r\n"
 
         return StreamingResponse(generate_stream(), media_type="text/event-stream")
 

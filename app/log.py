@@ -34,3 +34,31 @@ logger.addHandler(console_handler)
 
 # 禁止重复日志
 logger.propagate = False
+
+
+import traceback
+import contextlib
+
+@contextlib.asynccontextmanager
+async def async_error_handling(error_message="发生错误"):
+    try:
+        yield
+    except Exception as e:
+        error_traceback = traceback.format_exc()
+        logger.error(f"{error_message}:\n%s", error_traceback)
+        raise
+
+# # 使用方法
+# async def some_async_function():
+#     async with async_error_handling("在异步函数中发生错误"):
+#         # 异步代码
+#         await some_async_operation()
+
+@contextlib.contextmanager
+def error_handling(error_message="发生错误"):
+    try:
+        yield
+    except Exception as e:
+        error_traceback = traceback.format_exc()
+        logger.error(f"{error_message}:\n%s", error_traceback)
+        raise

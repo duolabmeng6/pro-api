@@ -1,4 +1,4 @@
-from http.client import HTTPException
+from fastapi import HTTPException
 from typing import AsyncGenerator
 
 import httpx
@@ -6,6 +6,7 @@ import httpx
 
 async def raise_for_status(response: httpx.Response):
     if response.status_code == 200:
+        print("raise_for_status",response.status_code )
         return
     response_content = await response.aread()
     error_data = {

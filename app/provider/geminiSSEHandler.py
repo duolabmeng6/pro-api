@@ -81,15 +81,11 @@ class geminiSSEHandler:
         return f"{json_data}"
 
     def handle_SSE_data_line(self, line: str):
-        if line.strip() == "data: [DONE]":
-            return "[DONE]"
-
-        if not line or line.isspace():
-            return ""
-
-        line = line.strip()
         if line.startswith("data:"):
             line = line[5:].strip()
+        line = line.strip()
+        if line == "[DONE]":
+            return "[DONE]"
 
         try:
             json_data = json.loads(line)
@@ -136,10 +132,10 @@ class geminiSSEHandler:
                 return self.generate_sse_response(response_data)
 
         except json.JSONDecodeError as e:
-            print(f"JSON解析失败: {e}\r\n{line}\r\n")
+            print(f"gemini handle_SSE_data_line \r\nJSON解析失败: {e}\r\n失败内容:{line}\r\n")
             return None
         except Exception as e:
-            print(f"处理失败: {e}\r\n{line}\r\n")
+            print(f"gemini handle_SSE_data_line \r\n处理失败: {e}\r\n失败内容:{line}\r\n")
             return None
 
     def _update_tool_calls(self, new_tool_calls):
@@ -238,8 +234,9 @@ class geminiSSEHandler:
 if __name__ == "__main__":
     def autotest(name, stream=False):
         testFIleList = [
+            "/Users/ll/Desktop/2024/ll-openai/app/provider/debugdata/cd1802d9-caa6-468c-ae2a-2a6181ca89c1_gemini-1.5-flash_gemini_sse.txt"
         ]
-        for root, dirs, files in os.walk("./savebody/"):
+        for root, dirs, files in os.walk("./debugdata/"):
             for file in files:
                 if file.endswith(name):
                     testFIleList.append(os.path.join(root, file))
@@ -264,5 +261,5 @@ if __name__ == "__main__":
                 print("-------------------")
 
 
-    autotest("_sse.txt",True)
+    autotest("gemini_see.txt",True)
     # autotest("_data.txt", False)

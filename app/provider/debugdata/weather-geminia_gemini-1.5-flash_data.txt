@@ -4,7 +4,7 @@
       "content": {
         "parts": [
           {
-            "text": "The image contains a colorful hot air balloon flying over a castle. The balloon is striped with blue, red, yellow, and orange. The castle is white with blue towers and turrets. The background is a bright blue sky with white clouds."
+            "text": "春风拂过，万物复苏，大地披上了一层嫩绿的衣裳。鸟儿欢快地歌唱，花儿争奇斗艳，空气中弥漫着春的气息。人们脱去厚重的冬衣，走出家门，享受着春光带来的温暖和希望。 \n"
           }
         ],
         "role": "model"
@@ -32,8 +32,8 @@
     }
   ],
   "usageMetadata": {
-    "promptTokenCount": 264,
-    "candidatesTokenCount": 48,
-    "totalTokenCount": 312
+    "promptTokenCount": 8,
+    "candidatesTokenCount": 63,
+    "totalTokenCount": 71
   }
 }
