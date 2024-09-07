@@ -11,7 +11,7 @@ class aiEasy:
         self.model = model
         self.tools = []
         self.available_functions = {}
-        if prompt:
+        if prompt == "":
             prompt = """你是一个智能助手,擅长利用各种工具来帮助用户解决问题。请仔细分析用户的需求,并合理地使用可用的工具函数来获取信息或执行任务。在回答时,要综合考虑用户的原始问题和通过工具获得的信息,给出全面、准确、有帮助的回答。如果需要多个步骤,请清晰地解释你的思路。始终以用户的需求为中心,努力提供最佳的解决方案。"""
         self.prompt = prompt
 

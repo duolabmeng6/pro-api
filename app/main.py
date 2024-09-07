@@ -1,3 +1,4 @@
+import json
 import sys
 import os
 from typing import Dict
@@ -74,6 +75,7 @@ def getProvider(provider):
         return geminiProvider
     raise HTTPException(status_code=500, detail="没有适配器")
 
+import pyefun
 
 @app.post("/v1/chat/completions")
 async def chat_completions(
@@ -88,6 +90,7 @@ async def chat_completions(
     provider = providers[0]
     # 获取header信息
     headers = dict(req.headers)
+
     id = str(uuid.uuid4())
     request.id = headers.get("id", id)
     logger.name = f"main.{request.id}"
@@ -98,6 +101,12 @@ async def chat_completions(
     # 创建openai接口
     ai_provider = ai_provider_class(provider.get("api_key"), provider.get("base_url"))
 
+    # 获取用户提交的完整body信息
+    body = await req.body()
+    body = json.loads(body)
+    body = json.dumps(body, ensure_ascii=False,indent=4)
+    pyefun.文件_保存(f"./provider/sendbody/{provider.get('provider')}_{request.id}_{request.model}.txt",body)
+    
     ai_provider.setDebugSave(f"{request.id}_{provider.get('mapped_model')}_{provider.get('provider')}")
     ai_provider._cache = True
     ai_provider._debug = True

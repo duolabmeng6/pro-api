@@ -1,0 +1,12 @@
+{
+    "model": "gpt-4",
+    "messages": [
+        {"role": "user", "content": "你好"},
+        {"role": "assistant", "content": "你好!有什么我可以帮助你的吗?"},
+        {"role": "user", "content": [
+            {"type": "text", "text": "这是一张图片"},
+            {"type": "image_url", "image_url": {"url": "http://example.com/image.jpg"}}
+        ]}
+    ],
+    "stream": true
+}
