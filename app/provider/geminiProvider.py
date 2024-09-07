@@ -493,7 +493,7 @@ if __name__ == "__main__":
         gemini_interface._cache = True
 
         # 读取JSON文件
-        with open('./testdata/openai_fc_2.json', 'r', encoding='utf-8') as file:
+        with open('./sendbody/openai_search3a_glm-4-flash.txt', 'r', encoding='utf-8') as file:
             data = json.load(file)
 
         try:

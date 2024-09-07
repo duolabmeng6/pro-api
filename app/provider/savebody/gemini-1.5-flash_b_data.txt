@@ -1,0 +1,39 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "```json\n{\n    \"总结\": \"Laravel 是一款基于 PHP 的开源 Web 框架，它采用了 MVC 架构模式，受到 Rails 框架的影响。 Laravel 提供了丰富的功能和工具，可以帮助开发者轻松构建现代化的 Web 应用。它拥有活跃的社区和完善的文档，是 PHP 开发者构建 Web 应用的优秀选择。\",\n    \"参考链接\": [\n        {\n            \"标题\": \"Laravel 基本信息：什么是 Laravel？ | Laravel China 社区\",\n            \"链接\": \"https://learnku.com/laravel/wikis/25509\"\n        },\n        {\n            \"标题\": \"Laravel - 面向 Web 开发者的 PHP 框架 - Laravel 中文\",\n            \"链接\": \"https://laravel.net.cn/\"\n        }\n    ]\n}\n```"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0,
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE"
+        }
+      ]
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 1161,
+    "candidatesTokenCount": 177,
+    "totalTokenCount": 1338
+  }
+}

@@ -1,10 +1,13 @@
 import json
+import base64
 
 import httpx
 from openai import OpenAI
 
 import os
 from dotenv import load_dotenv
+from openai.types.chat import ChatCompletionSystemMessageParam
+
 # 加载.env文件中的环境变量
 load_dotenv(dotenv_path='../.env')
 # 从环境变量中读取API密钥和基础URL
@@ -16,7 +19,6 @@ model = os.getenv('model', 'deepseek-coder')
 if not api_key or not base_url:
     raise ValueError("请在.env文件中设置OPENAI_API_KEY和OPENAI_BASE_URL")
 
-
 client = OpenAI(
     api_key=api_key,  # API密钥
     base_url=base_url,  # 基础URL
@@ -26,6 +28,38 @@ client = OpenAI(
         verify=False
     )
 )
+
+
+# 调用函数 上传图片问是什么东西
+
+def encode_image(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
+
+# 图片路径
+image_path = "../img.png"
+
+# 获取base64编码的图片
+base64_image = encode_image(image_path)
+
+# 创建包含图片的消息
+messages = [
+    {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "这张图片里有什么?"},
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+        ]
+    }
+]
+
+# 调用API
+response = client.chat.completions.create(
+    model="glm-4v",  # 使用支持图像识别的模型
+    messages=messages,
+)
+print(response)
+exit()
 
 
 # Define the search functions (mock implementations for Baidu, Google, and Bing)
@@ -113,8 +147,9 @@ def search(keyword):
     print(f"初始消息: {messages}")  # 调试信息
 
     # 第一次请求：决定使用哪些工具
-    response = client.chat.completions.create(model=model, messages=messages, tools=tools, tool_choice="auto", stream=True)
-    
+    response = client.chat.completions.create(model=model, messages=messages, tools=tools, tool_choice="auto",
+                                              stream=True)
+
     response_message = None
     for chunk in response:
         if chunk.choices[0].delta.tool_calls:
@@ -177,6 +212,7 @@ def search(keyword):
         print(f"发生错误: {e}")
         print(f"消息内容: {messages}")
         return "处理结果时发生错误"
+
 
 # 示例使用
 result = search("xindoo")

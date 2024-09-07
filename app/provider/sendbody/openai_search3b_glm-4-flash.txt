@@ -1,4 +1,5 @@
 {
+    "stream": true,
     "messages": [
         {
             "role": "system",

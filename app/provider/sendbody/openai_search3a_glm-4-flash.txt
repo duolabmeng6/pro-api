@@ -11,6 +11,7 @@
     ],
     "model": "glm-4-flash",
     "tool_choice": "auto",
+    "stream": true,
     "tools": [
         {
             "type": "function",
