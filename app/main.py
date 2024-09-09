@@ -15,10 +15,10 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
 from app.error_info import generate_error_response
-from database import Database
+from apiDB import apiDB
 import uuid
 
-db = Database(os.path.join(os.path.dirname(__file__), './api.yaml'))
+db = apiDB(os.path.join(os.path.dirname(__file__), './api.yaml'))
 ai_manager = load_providers(db)
 
 # 添加一个访问计数器

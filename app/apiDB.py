@@ -8,7 +8,7 @@ from fastapi.logger import logger
 
 # 配置日
 
-class Database:
+class apiDB:
     def __init__(self, file_path: str):
         # 初始化数据结构
         self.tokens: List[str] = []  # 存储API密钥

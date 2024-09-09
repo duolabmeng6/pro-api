@@ -124,7 +124,7 @@ class openaiProvider:
 
 if __name__ == "__main__":
     async def main():
-        from app.database import Database
+        from app.apiDB import Database
         db = Database("../../api.yaml")
         model_test = [
             "gpt-4o",

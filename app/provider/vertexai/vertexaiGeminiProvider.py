@@ -140,7 +140,7 @@ class vertexaiGeminiProvider:
 
 if __name__ == "__main__":
     async def main():
-        from app.database import Database
+        from app.apiDB import Database
         db = Database("../../api.yaml")
         providers, error = db.get_user_provider("sk-111111", "gemini-1.5-flash-001")
         provider = providers[0]

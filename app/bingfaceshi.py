@@ -47,9 +47,9 @@ async def send_request(session, semaphore):
             return False
 
 async def run_test():
-    semaphore = asyncio.Semaphore(100)  # 限制并发数为100
+    semaphore = asyncio.Semaphore(1)  # 限制并发数为100
     async with aiohttp.ClientSession() as session:
-        tasks = [send_request(session, semaphore) for _ in range(100)]
+        tasks = [send_request(session, semaphore) for _ in range(1)]
         results = await asyncio.gather(*tasks)
 
     success_count = sum(results)

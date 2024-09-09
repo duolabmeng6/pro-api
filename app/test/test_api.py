@@ -1,7 +1,7 @@
 import asyncio
 import json
 import httpx
-from app.database import Database
+from app.apiDB import Database
 
 
 def test_gemini():
