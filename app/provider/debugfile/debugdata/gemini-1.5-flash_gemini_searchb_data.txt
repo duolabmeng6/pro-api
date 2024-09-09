@@ -1,0 +1,39 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "```json\n{\n    \"总结\": \"Laravel 是一款用 PHP 编写的开源 Web 框架，它以其简洁的语法、强大的功能和可扩展的架构而闻名。它旨在简化 Web 开发过程，并提供现代 Web 应用程序所需的所有工具。Laravel 拥有庞大的社区和丰富的文档，是构建各种 Web 应用程序的理想选择。\",\n    \"参考链接\": [\n        {\n            \"标题\": \"Laravel 官方网站\",\n            \"链接\": \"https://laravel.com/\"\n        },\n        {\n            \"标题\": \"Laravel 安装指南\",\n            \"链接\": \"https://laravel.com/docs/11.x/installation\"\n        }\n    ]\n}\n``` \n"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0,
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE"
+        }
+      ]
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 271,
+    "candidatesTokenCount": 158,
+    "totalTokenCount": 429
+  }
+}

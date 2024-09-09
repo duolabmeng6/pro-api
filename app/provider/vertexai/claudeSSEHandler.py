@@ -3,7 +3,7 @@ import ujson as json
 import os
 
 
-class openaiSSEHandler:
+class claudeSSEHandler:
     def __init__(self, custom_id=None, model=""):
         self.custom_id = custom_id
         self.prompt_tokens = 0
@@ -40,7 +40,7 @@ class openaiSSEHandler:
 
         # json_data = json.dumps(chunk, ensure_ascii=False)
         return chunk
-    
+
     def generate_sse_response(self, content=None):
         current_timestamp = int(time.time())
         chunk = {
@@ -82,67 +82,64 @@ class openaiSSEHandler:
         return f"{json_data}"
 
     def handle_SSE_data_line(self, line: str):
-        if line.strip() == "data: [DONE]":
-            return "[DONE]"
-
-        if not line or line.isspace():
-            return ""
-
-        line = line.strip()
+        if line.startswith("event:"):
+            return None
         if line.startswith("data:"):
             line = line[5:].strip()
-
+        line = line.strip()
         if line == "[DONE]":
             return "[DONE]"
+        if line == "":
+            return None
 
         try:
             json_data = json.loads(line)
+            event_type = json_data.get('type')
 
-            # id = json_data.get('id', '')
-            # self.model = json_data.get('model', '')
-            choices = json_data.get('choices', [{}])
+            if event_type == 'message_start':
+                message = json_data.get('message', {})
+                self.custom_id = message.get('id')
+                self.model = message.get('model')
+                self.prompt_tokens = message.get('usage', {}).get('input_tokens', 0)
+                return self.generate_sse_response()
 
-            if choices:
-                delta = choices[0].get('delta', {})
-                finish_reason = choices[0].get('finish_reason')
-            else:
-                delta = {}
-                finish_reason = None
+            elif event_type == 'content_block_delta':
+                delta = json_data.get('delta', {})
+                if delta.get('type') == 'text_delta':
+                    content = delta.get('text', '')
+                    self.full_message_content += content
+                    return self.generate_sse_response({'type': 'content', 'content': content})
+                elif delta.get('type') == 'input_json_delta':
+                    partial_json = delta.get('partial_json', '')
+                    if self.tool_calls:
+                        self.tool_calls[-1]['function']['arguments'] += partial_json
+                    else:
+                        self.tool_calls.append({
+                            "id": f"call_{len(self.tool_calls)}",
+                            "type": "function",
+                            "function": {
+                                "name": "search",  # 假设工具名称为 search
+                                "arguments": partial_json
+                            }
+                        })
+                    return self.generate_sse_response({'type': 'tool_calls', 'function': self.tool_calls})
 
-            response_data = {}
-            if 'content' in delta:
-                response_data['type'] = 'content'
-                response_data['content'] = delta['content']
-                self.full_message_content += delta['content']
-            elif 'tool_calls' in delta:
-                response_data['type'] = 'tool_calls'
-                response_data['function'] = delta['tool_calls']
-                self._update_tool_calls(delta['tool_calls'])
-            elif finish_reason == 'tool_calls':
-                response_data['type'] = 'tool_calls'
-                response_data['function'] = self.tool_calls
-            elif finish_reason == 'stop':
-                response_data['type'] = 'stop'
-            else:
-                response_data['type'] = 'unknown'
-                response_data['content'] = ''
+            elif event_type == 'message_delta':
+                delta = json_data.get('delta', {})
+                self.completion_tokens = json_data.get('usage', {}).get('output_tokens', 0)
+                self.total_tokens = self.prompt_tokens + self.completion_tokens
+                if delta.get('stop_reason'):
+                    return self.generate_sse_response({'type': 'stop'})
 
-            # 检查有没有 usage 如果有就读取 然后更新到 self.prompt_tokens 和 self.completion_tokens 和 self.total_tokens
-            usage = json_data.get('usage', {})
-            if usage:
-                self.prompt_tokens = usage.get('prompt_tokens', 0)
-                self.completion_tokens = usage.get('completion_tokens', 0)
-                self.total_tokens = usage.get('total_tokens', 0)
-
-
-            return self.generate_sse_response( response_data)
+            elif event_type == 'message_stop':
+                return self.generate_sse_response({'type': 'end'})
 
         except json.JSONDecodeError as e:
-            print(f"JSON解析失败: {e}\r\n{line}\r\n")
-            return None
+            print(f"claude handle_SSE_data_line \r\nJSON解析失败: {e}\r\n失败内容:{line}\r\n")
         except Exception as e:
-            print(f"处理失败: {e}\r\n{line}\r\n")
-            return None
+            print(f"claude handle_SSE_data_line \r\n处理失败: {e}\r\n失败内容:{line}\r\n")
+
+        return None
 
     def _update_tool_calls(self, new_tool_calls):
         for new_call in new_tool_calls:
@@ -184,27 +181,42 @@ class openaiSSEHandler:
             "total_tokens": self.total_tokens,
             "tool_calls": self.tool_calls
         }
-    
+
     def handle_data_line(self, line: str):
         try:
             json_data = json.loads(line)
-            
-            self.custom_id = json_data.get('id', self.custom_id)
-            self.model = json_data.get('model', self.model)
-            
-            choices = json_data.get('choices', [{}])
-            if choices:
-                message = choices[0].get('message', {})
-                self.full_message_content = message.get('content', '')
-                self.tool_calls = message.get('tool_calls', [])
-            
+
+            # 设置基本信息
+            self.custom_id = json_data.get('id')
+            self.model = json_data.get('model')
+
+            # 处理content
+            content = json_data.get('content', [])
+            for part in content:
+                if part.get('type') == 'text':
+                    self.full_message_content += part.get('text', '')
+                elif part.get('type') == 'tool_use':
+                    tool_call = {
+                        "id": part.get('id'),
+                        "type": "function",
+                        "function": {
+                            "name": part.get('name'),
+                            "arguments": json.dumps(part.get('input', {}))
+                        }
+                    }
+                    self.tool_calls.append(tool_call)
+
+            # 处理usage
             usage = json_data.get('usage', {})
-            self.prompt_tokens = usage.get('prompt_tokens', 0)
-            self.completion_tokens = usage.get('completion_tokens', 0)
-            self.total_tokens = usage.get('total_tokens', 0)
-            
-            return self.generate_response()
-        
+            self.prompt_tokens = usage.get('input_tokens', 0)
+            self.completion_tokens = usage.get('output_tokens', 0)
+            self.total_tokens = self.prompt_tokens + self.completion_tokens
+
+            # 生成响应
+            response = self.generate_response()
+
+            return response
+
         except json.JSONDecodeError as e:
             print(f"JSON解析失败: {e}\n{line}\n")
             return None
@@ -214,29 +226,18 @@ class openaiSSEHandler:
 
 
 if __name__ == "__main__":
-    testFIleList = [
-        "./debugdata/weather-gemini1a_deepseek-coder_openai_data.txt",
-    ]
-    for file_name in testFIleList:
-        print("正在检查：", file_name)
-        handler = openaiSSEHandler(custom_id=file_name)
-        with open(file_name, "r", encoding="utf-8") as file:
-            filedata = file.read()
-            out = handler.handle_data_line(filedata)
-            print(out)
-            print("文件统计信息：", json.dumps(handler.get_stats(), ensure_ascii=False, indent=4))
-
-    exit()
-    def autotest(name,stream=False):
+    def autotest(name, stream=False):
         testFIleList = [
+            # "/Users/ll/Desktop/2024/ll-openai/app/provider/savebody/claude-3-5-sonnet@20240620_1a251e84e84ad6a2871c1faad6277946_sse.json"
+            "/Users/ll/Desktop/2024/ll-openai/app/provider/savebody/claude-3-5-sonnet@20240620_4fb2fa075e8aa72291ea9da548e13d3e_data.json"
         ]
-        for root, dirs, files in os.walk("debugfile/debugdata/"):
+        for root, dirs, files in os.walk("../debugfile/debugdata/"):
             for file in files:
                 if file.endswith(name):
                     testFIleList.append(os.path.join(root, file))
         for file_name in testFIleList:
             print("正在检查：", file_name)
-            handler = openaiSSEHandler(custom_id=file_name)
+            handler = claudeSSEHandler(custom_id=file_name)
             with open(file_name, "r", encoding="utf-8") as file:
                 if stream:
                     for line in file:
@@ -248,11 +249,12 @@ if __name__ == "__main__":
                     sse = handler.handle_data_line(filedata)
                     if sse:
                         pass
+                    # print(handler.generate_response())
+
 
                 print("文件统计信息：", json.dumps(handler.get_stats(), ensure_ascii=False, indent=4))
-                # print("文件统计信息：",json.dumps(handler.get_stats(), ensure_ascii=False))
-                # ic(handler.get_stats())
                 print("-------------------")
 
-    # autotest("openai_sse.txt",True)
-    # autotest("openai_data.txt",False)
+
+    # autotest("claude_see.txt",True)
+    autotest("claude_data.txt", False)

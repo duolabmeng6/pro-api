@@ -1,0 +1,38 @@
+{
+    "messages": [
+        {
+            "role": "system",
+            "content": "你是一个智能助手,擅长利用各种工具来帮助用户解决问题。请仔细分析用户的需求,并合理地使用可用的工具函数来获取信息或执行任务。在回答时,要综合考虑用户的原始问题和通过工具获得的信息,给出全面、准确、有帮助的回答。如果需要多个步骤,请清晰地解释你的思路。始终以用户的需求为中心,努力提供最佳的解决方案。"
+        },
+        {
+            "role": "user",
+            "content": "question: 搜索一下 laravel是什么"
+        },
+        {
+            "content": "",
+            "role": "assistant",
+            "tool_calls": [
+                {
+                    "function": {
+                        "arguments": "{\"query\":\"laravel\"}",
+                        "name": "search"
+                    },
+                    "type": "function"
+                }
+            ]
+        },
+        {
+            "tool_call_id": null,
+            "role": "tool",
+            "content": "[{\"title\": \"Laravel - The PHP Framework For Web Artisans\", \"href\": \"https://laravel.com/\", \"body\": \"Laravel - The PHP Framework For Web Artisans\"}, {\"title\": \"Installation - Laravel 11.x - The PHP Framework For Web Artisans\", \"href\": \"https://laravel.com/docs/11.x/installation\", \"body\": \"Learn how to create, configure, and run a Laravel project on your local machine or in the cloud. Laravel is a web framework with expressive syntax, powerful features, and scalable architecture.\"}]"
+        },
+        {
+            "role": "user",
+            "content": "using this JSON schema Output JSON Format: \r\n{\n    \"总结\": \"string\",\n    \"参考链接\": [\n        {\n            \"标题\": \"string\",\n            \"链接\": \"string\"\n        }\n    ]\n}"
+        }
+    ],
+    "model": "gemini-1.5-flash-001",
+    "response_format": {
+        "type": "json_object"
+    }
+}

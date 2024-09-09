@@ -51,5 +51,5 @@ result = aitool.chat("搜索一下 laravel是什么", {
     "参考链接": [
         {"标题": "string", "链接": "string"}
     ]
-},"search3")
+},"search")
 print("结果", result)

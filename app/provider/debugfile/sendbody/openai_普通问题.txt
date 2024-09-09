@@ -1,0 +1,8 @@
+{
+  "model": "glm-4-flash",
+  "messages": [{
+    "role": "user",
+    "content": "请用三句话描述春天。"
+  }],
+  "stream": true
+}

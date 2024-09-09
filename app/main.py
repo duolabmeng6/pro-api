@@ -2,9 +2,8 @@ import json
 import sys
 import os
 from types import SimpleNamespace
-from typing import Dict
-
-from urllib3 import request
+from app.log import logger
+from app.provider.test import load_providers
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -15,21 +14,14 @@ from fastapi.responses import StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
-from provider.geminiProvider import geminiProvider
-from provider.models import RequestModel, Message, ContentItem
-from provider.openaiProvider import openaiProvider
 from app.error_info import generate_error_response
-from app.log import logger
 from database import Database
 import uuid
 
 db = Database(os.path.join(os.path.dirname(__file__), './api.yaml'))
+ai_manager = load_providers(db)
 
 
-
-
-
-    
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("服务器启动")
@@ -68,72 +60,73 @@ security = HTTPBearer()
 
 async def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
     api_key = credentials.credentials
-    if not await db.verify_token(api_key):
+    if not db.verify_token(api_key):
         raise HTTPException(status_code=401, detail="没有授权")
     return api_key
 
 
-def getProvider(provider):
-    if provider == "openai":
-        return openaiProvider
-    if provider == "gemini":
-        return geminiProvider
-    raise HTTPException(status_code=500, detail="没有适配器")
+def getProvider(providerConfig):
+    name = f"{providerConfig.get('provider', '')}_{providerConfig.get('name', '')}"
+    chat = ai_manager.chat(name)
+    if not chat:
+        raise HTTPException(status_code=500, detail="没有适配器")
+    return chat
+
 
 import pyefun
 
+
 @app.post("/v1/chat/completions")
 async def chat_completions(
-        request: RequestModel,
         api_key: str = Depends(verify_api_key),
         req: Request = Request
 ):
+    body = json.loads(await req.body())
+    request = SimpleNamespace(**body)
     # 检查api_key和当前的请求的model是有可用模型
-    providers, error = await db.get_user_provider(api_key, request.model)
+    providers, error = db.get_user_provider(api_key, request.model)
     if not providers:
         raise HTTPException(status_code=500, detail=error)
     provider = providers[0]
-    # 获取header信息
     headers = dict(req.headers)
-
     id = str(uuid.uuid4())
     request.id = headers.get("id", id)
     logger.name = f"main.{request.id}"
+
     logger.info(
-        f"服务提供者:{provider['provider']} 请求模型:{request.model} 当前模型:{provider.get('mapped_model')} 名称:{provider.get('name')} \r\n 请求内容:\r\n{request.model_dump_json(indent=2)}")
+        f"服务提供者:{provider['provider']} 请求模型:{request.model} 当前模型:{provider.get('mapped_model')} 名称:{provider.get('name')}")
 
-    ai_provider_class = getProvider(provider["provider"])
     # 创建openai接口
-    ai_provider = ai_provider_class(provider.get("api_key"), provider.get("base_url"))
+    ai_chat = getProvider(provider)
 
-    # 获取用户提交的完整body信息
-    body = await req.body()
-    body = json.loads(body)
-    body2 = json.dumps(body, ensure_ascii=False,indent=4)
-    pyefun.文件_保存(f"./provider/sendbody/{provider.get('provider')}_{request.id}_{request.model}.txt",body2)
-    
-    ai_provider.setDebugSave(f"{provider.get('mapped_model')}_{provider.get('provider')}")
-    ai_provider._cache = True
-    ai_provider._debug = True
+    debug = db.config_server.get("debug", False)
+    if debug:
+        ai_chat.setDebugSave(f"{provider.get('mapped_model')}_{provider.get('provider')}_{request.id}")
+        ai_chat._cache = True
+        ai_chat._debug = True
+        body2json = json.dumps(body, indent=4, ensure_ascii=False)
+        pyefun.文件_保存(f"./provider/sendbody/{provider.get('provider')}_{request.id}_{request.model}.txt", body2json)
+    else:
+        ai_chat._cache = False
+        ai_chat._debug = False
 
-    request_model_name = request.model  # 保存请求时候的模型名称
-    request.model = provider.get("mapped_model")  # 映射为正确的名称
-    body["model"] = provider.get("mapped_model")  # 映射为正确的名称
-    # 发送请求
-    genData = ai_provider.chat2api(body, request_model_name, id)
-    # 得到转发数据
+    request_model_name = request.model  # 用户请求的模型名称
+    body["model"] = provider.get("mapped_model")  # 请求对应的api的模型名称
+
+    genData = ai_chat.chat2api(body, request_model_name, id)
     first_chunk = await genData.__anext__()
-
     if not request.stream:
-        logger.info(f"发送到客户端\r\n{first_chunk}")
+        if debug:
+            logger.info(f"发送到客户端\r\n{first_chunk}")
         return first_chunk
-
     if first_chunk:
         async def generate_stream():
             async for chunk in genData:
-                logger.info(f"发送到客户端\r\n{chunk}")
+                if debug:
+                    logger.info(f"发送到客户端\r\n{chunk}")
                 yield chunk + "\r\n\r\n"
-
+            stats_data = ai_chat.DataHeadler.get_stats()
+            logger.info(f"SSE 数据流迭代完成，统计信息：{stats_data}")
         return StreamingResponse(generate_stream(), media_type="text/event-stream")
 
 

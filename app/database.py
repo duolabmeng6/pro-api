@@ -3,7 +3,7 @@ import json
 import yaml
 from typing import List, Dict, Tuple
 
-from app.log import logger
+from fastapi.logger import logger
 
 
 # 配置日
@@ -26,7 +26,7 @@ class Database:
                 else:
                     logger.error("配置文件 'api.yaml' 为空。请检查文件内容。")
         except FileNotFoundError:
-            logger.error("配置文件 'api.yaml' 未找到。请确保文件存在于正确的位置。")
+            logger.error(f"配置文件 'api.yaml' 未找到。请确保文件存在于正确的位置。{file_path}")
         except yaml.YAMLError:
             logger.error("配置文件 'api.yaml' 格式不正确。请检查 YAML 格式。")
 
@@ -43,16 +43,22 @@ class Database:
             provider['model'] = model_dict
             config_data['providers'][index] = provider
 
-            # 构建providers列表
             for original_model, mapped_model in model_dict.items():
-                providers.append({
+                item = {
                     "name": provider.get('name'),
                     "provider": provider.get('provider'),
                     "mapped_model": mapped_model,  # 转换的模型名称 转发的话提交这个模型名称
                     "original_model": original_model,  # 请求的模型名称
                     "base_url": provider.get('base_url'),
                     "api_key": provider.get('api_key'),
-                })
+                }
+                # 加入所有其他的属性到这里item
+                # 将provider中的其他属性添加到item中
+                for key, value in provider.items():
+                    if key not in ["name", "provider", "model", "base_url", "api_key"]:
+                        item[key] = value
+                providers.append(item)
+
 
         self.providers = providers
         self.providersKV = {}
@@ -73,11 +79,14 @@ class Database:
 
         # logger.info(json.dumps(config_data, indent=4, ensure_ascii=False))
 
-    async def verify_token(self, api_key: str) -> bool:
+    def verify_token(self, api_key: str) -> bool:
         """验证API密钥是否有效"""
         return api_key in self.tokens
 
-    async def get_user_provider(self, api_key: str, model_name: str) -> Tuple[List[Dict], str]:
+    def get_all_provider(self):
+        return self.providers
+
+    def get_user_provider(self, api_key: str, model_name: str) -> Tuple[List[Dict], str]:
         """获取用户可用的提供者列表"""
         if api_key not in self.tokens:
             return [], "没有授权"
@@ -118,21 +127,21 @@ def is_model_allowed(user_model: str, model_name: str) -> bool:
 
 
 if __name__ == "__main__":
-    async def init():
+    def init():
         db = Database("./api.yaml")
-        ret = await db.verify_token("sk-abcdefg")
+        ret = db.verify_token("sk-abcdefg")
         print("token状态", ret)
-        ret = await db.verify_token("sk-111111")
+        ret = db.verify_token("sk-111111")
         print("token状态", ret)
 
-        provider, err = await db.get_user_provider("sk-111111", "glm-4-flash")
+        provider, err = db.get_user_provider("sk-111111", "glm-4-flash")
         print("配置:", err, json.dumps(provider, indent=4))
-        provider, err = await db.get_user_provider("sk-111111", "gpt-4o")
+        provider, err = db.get_user_provider("sk-111111", "gpt-4o")
         print("配置:", err, json.dumps(provider, indent=4))
-        provider, err = await db.get_user_provider("sk-333333", "gpt-4o")
+        provider, err = db.get_user_provider("sk-333333", "gpt-4o")
         print("配置:", err, json.dumps(provider, indent=4))
 
-        provider, err = await db.get_user_provider("sk-222222", "gpt-4o")
+        provider, err = db.get_user_provider("sk-222222", "gpt-4o")
         print("配置:", err, json.dumps(provider, indent=4))
 
 

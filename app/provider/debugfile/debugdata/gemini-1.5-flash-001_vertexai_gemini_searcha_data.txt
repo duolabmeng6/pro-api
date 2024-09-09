@@ -1,0 +1,56 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "functionCall": {
+              "name": "search",
+              "args": {
+                "query": "laravel"
+              }
+            }
+          }
+        ]
+      },
+      "finishReason": "STOP",
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.06347656,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.099609375
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.265625,
+          "severity": "HARM_SEVERITY_LOW",
+          "severityScore": 0.2421875
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.08886719,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.052734375
+        },
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.04736328,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.03564453
+        }
+      ],
+      "avgLogprobs": -0.010044422621528307
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 132,
+    "candidatesTokenCount": 3,
+    "totalTokenCount": 135
+  }
+}

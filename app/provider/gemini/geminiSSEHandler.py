@@ -3,7 +3,7 @@ import ujson as json
 import os
 
 
-class openaiSSEHandler:
+class geminiSSEHandler:
     def __init__(self, custom_id=None, model=""):
         self.custom_id = custom_id
         self.prompt_tokens = 0
@@ -12,7 +12,6 @@ class openaiSSEHandler:
         self.full_message_content = ""
         self.model = model
         self.tool_calls = []  # 新增: 用于存储完整的工具调用信息
-
 
     def generate_response(self):
         chunk = {
@@ -40,7 +39,7 @@ class openaiSSEHandler:
 
         # json_data = json.dumps(chunk, ensure_ascii=False)
         return chunk
-    
+
     def generate_sse_response(self, content=None):
         current_timestamp = int(time.time())
         chunk = {
@@ -82,66 +81,61 @@ class openaiSSEHandler:
         return f"{json_data}"
 
     def handle_SSE_data_line(self, line: str):
-        if line.strip() == "data: [DONE]":
-            return "[DONE]"
-
-        if not line or line.isspace():
-            return ""
-
-        line = line.strip()
         if line.startswith("data:"):
             line = line[5:].strip()
-
+        line = line.strip()
         if line == "[DONE]":
             return "[DONE]"
 
         try:
             json_data = json.loads(line)
 
-            # id = json_data.get('id', '')
-            # self.model = json_data.get('model', '')
-            choices = json_data.get('choices', [{}])
+            candidates = json_data.get('candidates', [])
+            usage_metadata = json_data.get('usageMetadata', {})
 
-            if choices:
-                delta = choices[0].get('delta', {})
-                finish_reason = choices[0].get('finish_reason')
-            else:
-                delta = {}
-                finish_reason = None
+            if candidates:
+                content = candidates[0].get('content', {})
+                parts = content.get('parts', [])
+                finish_reason = candidates[0].get('finishReason')
 
-            response_data = {}
-            if 'content' in delta:
-                response_data['type'] = 'content'
-                response_data['content'] = delta['content']
-                self.full_message_content += delta['content']
-            elif 'tool_calls' in delta:
-                response_data['type'] = 'tool_calls'
-                response_data['function'] = delta['tool_calls']
-                self._update_tool_calls(delta['tool_calls'])
-            elif finish_reason == 'tool_calls':
-                response_data['type'] = 'tool_calls'
-                response_data['function'] = self.tool_calls
-            elif finish_reason == 'stop':
-                response_data['type'] = 'stop'
-            else:
-                response_data['type'] = 'unknown'
-                response_data['content'] = ''
+                response_data = {}
+                if parts:
+                    part = parts[0]
+                    if 'text' in part:
+                        response_data['type'] = 'content'
+                        response_data['content'] = part['text']
+                        self.full_message_content += response_data['content']
+                    elif 'functionCall' in part:
+                        response_data['type'] = 'tool_calls'
+                        function_call = part['functionCall']
+                        tool_call = {
+                            "id": f"call_{len(self.tool_calls)}",
+                            "type": "function",
+                            "function": {
+                                "name": function_call.get('name'),
+                                "arguments": json.dumps(function_call.get('args', {}))
+                            }
+                        }
+                        self.tool_calls.append(tool_call)
+                        response_data['function'] = [tool_call]
+                elif finish_reason == 'STOP':
+                    response_data['type'] = 'stop'
+                else:
+                    response_data['type'] = 'unknown'
+                    response_data['content'] = ''
 
-            # 检查有没有 usage 如果有就读取 然后更新到 self.prompt_tokens 和 self.completion_tokens 和 self.total_tokens
-            usage = json_data.get('usage', {})
-            if usage:
-                self.prompt_tokens = usage.get('prompt_tokens', 0)
-                self.completion_tokens = usage.get('completion_tokens', 0)
-                self.total_tokens = usage.get('total_tokens', 0)
+                # 更新token计数
+                self.prompt_tokens = usage_metadata.get('promptTokenCount', 0)
+                self.completion_tokens = usage_metadata.get('candidatesTokenCount', 0)
+                self.total_tokens = usage_metadata.get('totalTokenCount', 0)
 
-
-            return self.generate_sse_response( response_data)
+                return self.generate_sse_response(response_data)
 
         except json.JSONDecodeError as e:
-            print(f"JSON解析失败: {e}\r\n{line}\r\n")
+            print(f"gemini handle_SSE_data_line \r\nJSON解析失败: {e}\r\n失败内容:{line}\r\n")
             return None
         except Exception as e:
-            print(f"处理失败: {e}\r\n{line}\r\n")
+            print(f"gemini handle_SSE_data_line \r\n处理失败: {e}\r\n失败内容:{line}\r\n")
             return None
 
     def _update_tool_calls(self, new_tool_calls):
@@ -184,27 +178,51 @@ class openaiSSEHandler:
             "total_tokens": self.total_tokens,
             "tool_calls": self.tool_calls
         }
-    
+
     def handle_data_line(self, line: str):
         try:
             json_data = json.loads(line)
-            
-            self.custom_id = json_data.get('id', self.custom_id)
-            self.model = json_data.get('model', self.model)
-            
-            choices = json_data.get('choices', [{}])
-            if choices:
-                message = choices[0].get('message', {})
-                self.full_message_content = message.get('content', '')
-                self.tool_calls = message.get('tool_calls', [])
-            
-            usage = json_data.get('usage', {})
-            self.prompt_tokens = usage.get('prompt_tokens', 0)
-            self.completion_tokens = usage.get('completion_tokens', 0)
-            self.total_tokens = usage.get('total_tokens', 0)
-            
-            return self.generate_response()
-        
+
+            # 处理candidates
+            candidates = json_data.get('candidates', [])
+            if candidates:
+                candidate = candidates[0]
+                content = candidate.get('content', {})
+                parts = content.get('parts', [])
+
+                # 处理function call
+                for part in parts:
+                    if 'functionCall' in part:
+                        function_call = part['functionCall']
+                        tool_call = {
+                            "type": "function",
+                            "function": {
+                                "name": function_call.get('name'),
+                                "arguments": json.dumps(function_call.get('args', {}))
+                            }
+                        }
+                        self.tool_calls.append(tool_call)
+                    elif 'text' in part:
+                        self.full_message_content += part['text']
+
+                # 设置role
+                role = content.get('role', 'assistant')
+
+            # 处理usage
+            usage_metadata = json_data.get('usageMetadata', {})
+            self.prompt_tokens = usage_metadata.get('promptTokenCount', 0)
+            self.completion_tokens = usage_metadata.get('candidatesTokenCount', 0)
+            self.total_tokens = usage_metadata.get('totalTokenCount', 0)
+
+            # 生成响应
+            response = self.generate_response()
+
+            # 如果没有custom_id，使用当前时间戳
+            if not self.custom_id:
+                self.custom_id = f"gemini-{int(time.time())}"
+
+            return response
+
         except json.JSONDecodeError as e:
             print(f"JSON解析失败: {e}\n{line}\n")
             return None
@@ -214,29 +232,17 @@ class openaiSSEHandler:
 
 
 if __name__ == "__main__":
-    testFIleList = [
-        "./debugdata/weather-gemini1a_deepseek-coder_openai_data.txt",
-    ]
-    for file_name in testFIleList:
-        print("正在检查：", file_name)
-        handler = openaiSSEHandler(custom_id=file_name)
-        with open(file_name, "r", encoding="utf-8") as file:
-            filedata = file.read()
-            out = handler.handle_data_line(filedata)
-            print(out)
-            print("文件统计信息：", json.dumps(handler.get_stats(), ensure_ascii=False, indent=4))
-
-    exit()
-    def autotest(name,stream=False):
+    def autotest(name, stream=False):
         testFIleList = [
+            "/Users/ll/Desktop/2024/ll-openai/app/provider/debugdata/cd1802d9-caa6-468c-ae2a-2a6181ca89c1_gemini-1.5-flash_gemini_sse.txt"
         ]
-        for root, dirs, files in os.walk("debugfile/debugdata/"):
+        for root, dirs, files in os.walk("../debugfile/debugdata/"):
             for file in files:
                 if file.endswith(name):
                     testFIleList.append(os.path.join(root, file))
         for file_name in testFIleList:
             print("正在检查：", file_name)
-            handler = openaiSSEHandler(custom_id=file_name)
+            handler = geminiSSEHandler(custom_id=file_name)
             with open(file_name, "r", encoding="utf-8") as file:
                 if stream:
                     for line in file:
@@ -248,11 +254,12 @@ if __name__ == "__main__":
                     sse = handler.handle_data_line(filedata)
                     if sse:
                         pass
+                    # print(handler.generate_response())
+
 
                 print("文件统计信息：", json.dumps(handler.get_stats(), ensure_ascii=False, indent=4))
-                # print("文件统计信息：",json.dumps(handler.get_stats(), ensure_ascii=False))
-                # ic(handler.get_stats())
                 print("-------------------")
 
-    # autotest("openai_sse.txt",True)
-    # autotest("openai_data.txt",False)
+
+    autotest("gemini_see.txt",True)
+    # autotest("_data.txt", False)

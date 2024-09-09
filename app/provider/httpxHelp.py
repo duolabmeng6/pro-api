@@ -27,8 +27,8 @@ client = httpx.AsyncClient(
     verify=False,
     # follow_redirects=True,
     proxies={  # 使用字典形式来指定不同类型的代理
-        "http://": "http://127.0.0.1:8888",
-        "https://": "http://127.0.0.1:8888",  # 如果代理服务器支持 HTTP 和 HTTPS，则可以这样设置
+        # "http://": "http://127.0.0.1:8888",
+        # "https://": "http://127.0.0.1:8888",  # 如果代理服务器支持 HTTP 和 HTTPS，则可以这样设置
     },
 )
 
@@ -54,6 +54,9 @@ async def get_api_data(sendReady) -> AsyncGenerator[str, None]:
         yield response_text
 
 def get_api_data2(sendReady):
+    import logging
+    logging.getLogger("httpx").setLevel(logging.DEBUG)
+
     with httpx.Client(
         headers={
             "Content-Type": "application/json",
@@ -63,11 +66,15 @@ def get_api_data2(sendReady):
         timeout=httpx.Timeout(connect=15.0, read=600, write=30.0, pool=30.0),
         verify=False,
         proxies={
-            "http://": "http://127.0.0.1:8888",
-            "https://": "http://127.0.0.1:8888",
+            # "http://": "http://127.0.0.1:8888",
+            # "https://": "http://127.0.0.1:8888",
         }
     ) as client:
-        response = client.post(sendReady["url"], headers=sendReady["headers"], json=sendReady["body"])
+        if isinstance(sendReady["body"], str):
+            response = client.post(sendReady["url"], headers=sendReady["headers"], data=sendReady["body"])
+        else:
+            response = client.post(sendReady["url"], headers=sendReady["headers"], json=sendReady["body"])
+
         print("===========")
         print(response.headers.items())
         print(response.status_code)

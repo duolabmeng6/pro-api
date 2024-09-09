@@ -7,7 +7,7 @@ from app.database import Database
 def test_gemini():
     async def gemini():
         db = Database("../api.yaml")
-        providers, error = await db.get_user_provider("sk-111111", "gemini-1.5-flash")
+        providers, error = db.get_user_provider("sk-111111", "gemini-1.5-flash")
         provider = providers[0]
         api_key = provider['api_key']
         base_url = provider['base_url']

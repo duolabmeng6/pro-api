@@ -1,17 +1,42 @@
 import base64
-from typing import AsyncGenerator
-
+import os
+import time
 import httpx
-
 import ujson as json
-from duckduckgo_search.utils import json_dumps
-from icecream import ic
 
 from app.provider.httpxHelp import get_api_data2
+import pyefun
+import app.help as help
+
+token_cache = {}
+
+
+def get_access_token(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN):
+    TOKEN_URL = 'https://www.googleapis.com/oauth2/v4/token'
+    now = time.time()
+
+    if CLIENT_ID not in token_cache:
+        token_cache[CLIENT_ID] = {"access_token": "", "expiry": 0}
+
+    if token_cache[CLIENT_ID]["access_token"] and now < token_cache[CLIENT_ID]["expiry"] - 120:
+        return token_cache[CLIENT_ID]["access_token"]
+
+    with httpx.Client() as client:
+        response = client.post(TOKEN_URL, json={
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
+            "refresh_token": REFRESH_TOKEN,
+            "grant_type": "refresh_token"
+        })
+    data = response.json()
+    token_cache[CLIENT_ID]["access_token"] = data["access_token"]
+    token_cache[CLIENT_ID]["expiry"] = now + data["expires_in"]
+
+    return token_cache[CLIENT_ID]["access_token"]
 
 
 class openaiSendBodyHeandler:
-    def __init__(self, api_key, base_url, model):
+    def __init__(self, api_key="", base_url="", model=""):
         self.req = None
         self.api_key = api_key
         self.base_url = base_url
@@ -65,7 +90,7 @@ class openaiSendBodyHeandler:
                 continue
 
             parts = []
-            if isinstance(content, str):
+            if isinstance(content, str) and content != '':
                 parts.append({"text": content})
             elif isinstance(content, list):
                 for item in content:
@@ -88,7 +113,12 @@ class openaiSendBodyHeandler:
                             else:
                                 parts.append({"image_url": image_url})
 
-            contents.append({"role": "user" if role == "user" else "model", "parts": parts})
+            if parts == []:
+                continue
+            if role == "user":
+                contents.append({"role": "user", "parts": parts})
+            else:
+                contents.append({"role": "model", "parts": parts})
 
         # 处理工具
         tools = []
@@ -135,7 +165,7 @@ class openaiSendBodyHeandler:
                 "category": category,
                 "threshold": "BLOCK_NONE"
             })
-        payload["safetySettings"] = safety_settings
+        # payload["safetySettings"] = safety_settings
 
         return {
             "url": url,
@@ -146,28 +176,156 @@ class openaiSendBodyHeandler:
             "body": payload
         }
 
+    def get_vertexai_gemini(self, PROJECT_ID,
+                            CLIENT_ID,
+                            CLIENT_SECRET,
+                            REFRESH_TOKEN,
+                            MODEL
+                            ):
 
-import pyefun
+        ready = self.get_Gemini()
+
+        access_token = get_access_token(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN)
+        LOCATION_ID = "us-central1"
+        API_ENDPOINT = f"{LOCATION_ID}-aiplatform.googleapis.com"
+        if ready["stream"]:
+            api_url = f"https://{API_ENDPOINT}/v1/projects/{PROJECT_ID}/locations/{LOCATION_ID}/publishers/google/models/{MODEL}:streamGenerateContent?alt=sse"
+        else:
+            api_url = f"https://{API_ENDPOINT}/v1/projects/{PROJECT_ID}/locations/{LOCATION_ID}/publishers/google/models/{MODEL}:generateContent"
+
+        return {
+            "url": api_url,
+            "stream": False,
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "Authorization": f"Bearer {access_token}",
+
+            },
+            "body": ready['body']
+        }
+
+    def get_vertexai_claude(self,
+                            PROJECT_ID,
+                            CLIENT_ID,
+                            CLIENT_SECRET,
+                            REFRESH_TOKEN,
+                            MODEL
+                            ):
+
+        stream = self.req.get("stream", False)
+
+        # 构建 Claude API 请求体
+        payload = {
+            "anthropic_version": "vertex-2023-10-16",
+            # "model": self.model,
+            "max_tokens": self.req.get("max_tokens", 1024),
+            "messages": [],
+            "stream": stream
+        }
+        system_content = None
+        # 处理消息
+        for msg in self.req.get("messages", []):
+            role = msg["role"]
+            content = msg.get("content", "")
+            if role == "system":
+                system_content = content
+                continue
+            if role == "user":
+                role = "user"
+            else:
+                role = "assistant"
+
+            claude_msg = {"role": role, "content": []}
+
+            if isinstance(content, str):
+                claude_msg["content"].append({"type": "text", "text": content})
+            elif isinstance(content, list):
+                for item in content:
+                    if isinstance(item, str):
+                        claude_msg["content"].append({"type": "text", "text": item})
+                    elif isinstance(item, dict):
+                        if item.get("type") == "text":
+                            claude_msg["content"].append({"type": "text", "text": item["text"]})
+                        elif item.get("type") == "image_url":
+                            image_url = item["image_url"]["url"]
+                            if image_url.startswith("data:image"):
+                                _, encoded = image_url.split(",", 1)
+                                claude_msg["content"].append({
+                                    "type": "image",
+                                    "source": {
+                                        "type": "base64",
+                                        "media_type": "image/png",
+                                        "data": encoded
+                                    }
+                                })
+                            else:
+                                claude_msg["content"].append({
+                                    "type": "image",
+                                    "source": {
+                                        "type": "url",
+                                        "url": image_url
+                                    }
+                                })
+            tool_calls = msg.get("tool_calls", [])
+            if tool_calls:
+                continue
+            if role == "tool":
+                claude_msg = {
+                    "role": "user",
+                    "content": msg.get("content", "")
+                }
+
+            payload["messages"].append(claude_msg)
+
+        if system_content:
+            payload["system"] = system_content
+        # 处理工具
+        if self.req.get("tools"):
+            payload["tools"] = []
+            for tool in self.req["tools"]:
+                if tool["type"] == "function":
+                    function = tool["function"]
+                    claude_tool = {
+                        "name": function["name"],
+                        "description": function["description"],
+                        "input_schema": {
+                            "type": "object",
+                            "properties": function["parameters"].get("properties", {}),
+                            "required": function["parameters"].get("required", [])
+                        }
+                    }
+                    payload["tools"].append(claude_tool)
+
+        # Claude API URL (for Vertex AI)
+        LOCATION = "europe-west1"
+        MODEL = self.model
+        url = f"https://{LOCATION}-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/anthropic/models/{MODEL}:streamRawPredict"
+        access_token = get_access_token(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN)
+        return {
+            "url": url,
+            "stream": stream,
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "Authorization": f"Bearer {access_token}",
+
+            },
+            "body": payload
+        }
+
 
 if __name__ == "__main__":
-    import os
-    from dotenv import load_dotenv
+    help.load_env()
 
-    # 加载.env文件中的环境变量
-    load_dotenv(dotenv_path='../.env')
     # 从环境变量中读取API密钥和基础URL
     api_key = os.getenv('api_key')
     base_url = os.getenv('base_url')
     model = os.getenv('model', 'deepseek-coder')
 
-    # httpx 日志
-    import logging
-
-    logging.getLogger("httpx").setLevel(logging.DEBUG)
-
     files = [
-        "./sendbody/openai_search3b_glm-4-flash.txt"
+        # "./sendbody/openai_search3b_glm-4-flash.txt"
+        # "./sendbody/openai_普通问题.txt"
         # "./sendbody/openai图片2.txt"
+        "/Users/ll/Desktop/2024/ll-openai/app/provider/sendbody/vertexai_gemini_weather-gemini-1.5-flash-001a_gemini-1.5-flash-001.txt"
 
     ]
     with open(files[0], "r", encoding="utf-8") as f:
@@ -179,16 +337,48 @@ if __name__ == "__main__":
         # obj.header_openai(body)
         # pushdata = obj.get_oepnai()
 
+        # model = "gemini-1.5-flash"
+        # obj = openaiSendBodyHeandler(api_key=api_key,
+        #                              base_url= base_url,
+        #                              model=model)
+        # obj.header_openai(body)
+        # print(json.dumps(obj.get_Gemini(), indent=4, ensure_ascii=False))
+        # pushdata = obj.get_Gemini()
+        # ic(pushdata)
+        # response = get_api_data2(pushdata)
+        # md5 = pyefun.取数据md5(response)
+        # pyefun.文件_写出(f"./savebody/{model}_{md5}_sse.txt", response)
+        #
         model = "gemini-1.5-flash"
-        obj = openaiSendBodyHeandler(api_key=api_key,
-                                     base_url= base_url,
-                                     model=model)
+        obj = openaiSendBodyHeandler(api_key=os.getenv('api_key'),
+                                     base_url=os.getenv('base_url'),
+                                     model=os.getenv('model', 'gemini-1.5-flash'))
         obj.header_openai(body)
-        print(json.dumps(obj.get_Gemini(), indent=4, ensure_ascii=False))
-        pushdata = obj.get_Gemini()
+        pushdata = obj.get_vertexai_gemini(
+            PROJECT_ID=os.getenv('PROJECT_ID'),
+            CLIENT_ID=os.getenv('CLIENT_ID'),
+            CLIENT_SECRET=os.getenv('CLIENT_SECRET'),
+            REFRESH_TOKEN=os.getenv('REFRESH_TOKEN'),
+            MODEL=model,
+        )
+
+        # model = "claude-3-5-sonnet@20240620"
+        # obj = openaiSendBodyHeandler(api_key=os.getenv('api_key'),
+        #                              base_url=os.getenv('base_url'),
+        #                              model=os.getenv('model', 'claude-3-5-sonnet@20240620'))
+        # obj.header_openai(body)
+        # pushdata = obj.get_vertexai_claude(
+        #     PROJECT_ID=os.getenv('PROJECT_ID'),
+        #     CLIENT_ID=os.getenv('CLIENT_ID'),
+        #     CLIENT_SECRET=os.getenv('CLIENT_SECRET'),
+        #     REFRESH_TOKEN=os.getenv('REFRESH_TOKEN'),
+        #     MODEL=model,
+        # )
 
         ic(pushdata)
-
         response = get_api_data2(pushdata)
         md5 = pyefun.取数据md5(response)
-        pyefun.文件_写出(f"./savebody/{model}_{md5}_sse.txt", response)
+        if pushdata['stream']:
+            pyefun.文件_写出(f"./savebody/{model}_{md5}_sse.txt", response)
+        else:
+            pyefun.文件_写出(f"./savebody/{model}_{md5}_data.json", response)

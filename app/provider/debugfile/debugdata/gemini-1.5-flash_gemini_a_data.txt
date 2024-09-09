@@ -1,0 +1,39 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "很抱歉，我暂时无法使用谷歌和必应搜索引擎。但我可以帮您从百度搜索“xindoo”并汇总结果。请问您想了解哪些方面的信息呢？例如，您想了解xindoo是什么，它的功能，还是它的评价？请告诉我您的具体需求，我会尽力帮您找到答案。 \n"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0,
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE"
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE"
+        }
+      ]
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 223,
+    "candidatesTokenCount": 70,
+    "totalTokenCount": 293
+  }
+}

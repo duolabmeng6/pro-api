@@ -1,0 +1,121 @@
+[{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "text": "这"
+          }
+        ]
+      }
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 263,
+    "candidatesTokenCount": 1,
+    "totalTokenCount": 264
+  }
+}
+,
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "text": "幅图画里有一只五颜六色的热气球飞过一座"
+          }
+        ]
+      },
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.11767578,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.078125
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.15039063,
+          "severity": "HARM_SEVERITY_LOW",
+          "severityScore": 0.2109375
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.09033203,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.122558594
+        },
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.14257813,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.078125
+        }
+      ]
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 263,
+    "candidatesTokenCount": 17,
+    "totalTokenCount": 280
+  }
+}
+,
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "text": "城堡。"
+          }
+        ]
+      },
+      "finishReason": "STOP",
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.07080078,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.071777344
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.123535156,
+          "severity": "HARM_SEVERITY_LOW",
+          "severityScore": 0.23535156
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.05834961,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.08642578
+        },
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.080566406,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.08251953
+        }
+      ]
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 263,
+    "candidatesTokenCount": 19,
+    "totalTokenCount": 282
+  }
+}
+]

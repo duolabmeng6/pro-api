@@ -99,5 +99,5 @@ result = aitool.chat("What's the weather in San Francisco today and the likeliho
         "location": "string",
         "weather_description": "string"
     }]
-}, "weather-gemini1")
+}, "weather")
 print("结果:", result)

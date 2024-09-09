@@ -1,0 +1,306 @@
+[{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "text": "```"
+          }
+        ]
+      }
+    }
+  ]
+}
+,
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "text": "json\n{\n    \"总结\": \"Laravel 是一款基于 PHP 语言"
+          }
+        ]
+      },
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.051757813,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.13574219
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.051757813,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.061035156
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.08642578,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.075683594
+        },
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.037353516,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.033203125
+        }
+      ]
+    }
+  ]
+}
+,
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "text": "的开源 Web 框架，采用了 MVC 架构模式，受到 Rails 框架"
+          }
+        ]
+      },
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.029296875,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.10986328
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.02722168,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.055908203
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.06933594,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.078125
+        },
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.040283203,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.02758789
+        }
+      ]
+    }
+  ]
+}
+,
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "text": "的影响。它提供丰富的功能和工具，简化了 Web 开发流程，让开发者可以专注于业务逻辑，而不用为琐事烦恼。无论"
+          }
+        ]
+      },
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.027954102,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.078125
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.028442383,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.072753906
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.06738281,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.06347656
+        },
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.03515625,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.029296875
+        }
+      ]
+    }
+  ]
+}
+,
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "text": "您使用 Livewire、Inertia、Next.js 还是其他前端技术，Laravel 都能提供强大的后端支持和性能优化。\",\n    \""
+          }
+        ]
+      },
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.030273438,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.07714844
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.037353516,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.09814453
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.059326172,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.06640625
+        },
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.03564453,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.03466797
+        }
+      ]
+    }
+  ]
+}
+,
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "text": "参考链接\": [\n        {\n            \"标题\": \"Laravel 基本信息：什么是 Laravel？\",\n            \"链接\": \"https://learnku.com/laravel/wikis/25509\"\n        },"
+          }
+        ]
+      },
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.040771484,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.08642578
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.061767578,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.11767578
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.06347656,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.055908203
+        },
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.03857422,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.037353516
+        }
+      ]
+    }
+  ]
+}
+,
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "text": "\n        {\n            \"标题\": \"Laravel - 面向 Web 开发者的 PHP 框架\",\n            \"链接\": \"https://laravel.net.cn/\" \n        }\n    ]\n}\n```"
+          }
+        ]
+      },
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.061767578,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.10498047
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.08496094,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.13769531
+        },
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.08642578,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.06298828
+        },
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "probability": "NEGLIGIBLE",
+          "probabilityScore": 0.040283203,
+          "severity": "HARM_SEVERITY_NEGLIGIBLE",
+          "severityScore": 0.04663086
+        }
+      ]
+    }
+  ]
+}
+,
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "text": ""
+          }
+        ]
+      },
+      "finishReason": "STOP"
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 1157,
+    "candidatesTokenCount": 190,
+    "totalTokenCount": 1347
+  }
+}
+]
