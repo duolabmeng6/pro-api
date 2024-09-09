@@ -21,15 +21,19 @@ import uuid
 db = Database(os.path.join(os.path.dirname(__file__), './api.yaml'))
 ai_manager = load_providers(db)
 
+# 添加一个访问计数器
+request_counter = 0
+
+from anyio.lowlevel import RunVar
+from anyio import CapacityLimiter
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("服务器启动")
+    RunVar("_default_thread_limiter").set(CapacityLimiter(200))
     yield
 
-
 app = FastAPI(lifespan=lifespan)
-
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -54,16 +58,13 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         }
     )
 
-
 security = HTTPBearer()
 
-
-async def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
+def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
     api_key = credentials.credentials
     if not db.verify_token(api_key):
         raise HTTPException(status_code=401, detail="没有授权")
     return api_key
-
 
 def getProvider(providerConfig):
     name = f"{providerConfig.get('provider', '')}_{providerConfig.get('name', '')}"
@@ -72,16 +73,30 @@ def getProvider(providerConfig):
         raise HTTPException(status_code=500, detail="没有适配器")
     return chat
 
-
 import pyefun
 
+import asyncio
+
+# 创建一个锁对象
+request_counter_lock = asyncio.Lock()
+
+async def increment_request_counter():
+    global request_counter
+    async with request_counter_lock:
+        request_counter += 1
+        return request_counter
 
 @app.post("/v1/chat/completions")
 async def chat_completions(
         api_key: str = Depends(verify_api_key),
         req: Request = Request
 ):
-    body = json.loads(await req.body())
+    
+    try:
+        body = json.loads(await req.body())
+    except:
+        raise HTTPException(status_code=500, detail="body解析失败")
+
     request = SimpleNamespace(**body)
     # 检查api_key和当前的请求的model是有可用模型
     providers, error = db.get_user_provider(api_key, request.model)
@@ -93,8 +108,10 @@ async def chat_completions(
     request.id = headers.get("id", id)
     logger.name = f"main.{request.id}"
 
-    logger.info(
-        f"服务提供者:{provider['provider']} 请求模型:{request.model} 当前模型:{provider.get('mapped_model')} 名称:{provider.get('name')}")
+    logger.info(f"请求计数: {request_counter}, 服务提供者:{provider['provider']}, 请求模型:{request.model}, 当前模型:{provider.get('mapped_model')}, 名称:{provider.get('name')}")
+
+    # logger.info(
+    #     f"服务提供者:{provider['provider']} 请求模型:{request.model} 当前模型:{provider.get('mapped_model')} 名称:{provider.get('name')}")
 
     # 创建openai接口
     ai_chat = getProvider(provider)
@@ -126,9 +143,9 @@ async def chat_completions(
                     logger.info(f"发送到客户端\r\n{chunk}")
                 yield chunk + "\r\n\r\n"
             stats_data = ai_chat.DataHeadler.get_stats()
-            logger.info(f"SSE 数据流迭代完成，统计信息：{stats_data}")
+            yield f"data: {json.dumps(stats_data)}\n\n"
+            logger.info(f"SSE 数据迭代完成，统计信息：{stats_data}")
         return StreamingResponse(generate_stream(), media_type="text/event-stream")
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -142,7 +159,6 @@ if __name__ == "__main__":
 
     uvicorn.run(
         "__main__:app",
-        host=db.config_server.get("host", "0.0.0.0"),
+        host=db.config_server.get("host", "127.0.0.1"),
         port=db.config_server.get("port", 8000),
-        reload=True
     )

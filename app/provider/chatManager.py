@@ -1,6 +1,7 @@
 
 
 from app.provider.chatInterface import chatInterface
+import copy
 
 
 
@@ -16,12 +17,12 @@ class chatManager:
     def chat(self, chat_name: str) -> chatInterface:
         if chat_name not in self.chats:
             return None
-        return self.chats[chat_name]
+        return copy.deepcopy(self.chats[chat_name])
 
     def get_chat(self) -> chatInterface:
         if self.current_chat not in self.chats:
             raise ValueError("chat not set")
-        return self.chats[self.current_chat]
+        return copy.deepcopy(self.chats[self.current_chat])
 
 
     
