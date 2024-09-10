@@ -24,7 +24,7 @@ console_handler.setFormatter(formatter)
 
 # 获取 FastAPI logger 实例
 logger = logging.getLogger("fastapi")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 logger.addHandler(console_handler)
 
 

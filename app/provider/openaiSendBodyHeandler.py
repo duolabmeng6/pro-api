@@ -298,7 +298,6 @@ class openaiSendBodyHeandler:
 
         # Claude API URL (for Vertex AI)
         LOCATION = "europe-west1"
-        MODEL = self.model
         url = f"https://{LOCATION}-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/anthropic/models/{MODEL}:streamRawPredict"
         access_token = get_access_token(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN)
         return {

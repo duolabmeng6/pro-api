@@ -3,6 +3,9 @@ import os
 from typing import Dict, Any, AsyncGenerator, Tuple
 from fastapi import HTTPException
 import json
+
+from ply.yacc import debug_file
+
 from app.provider.httpxHelp import get_api_data, get_api_data_cache
 from app.log import logger
 from app.provider.openaiSSEHandler import openaiSSEHandler as SSEHandler
@@ -73,8 +76,10 @@ class baseProvider:
             if self._cache:
                 if pushdata.get("stream", False):
                     pyefun.文件_追加文本(self.debug_file, line)
+                    logger.info(f"{debug_file}追加数据\r\n{line}")
                 else:
                     pyefun.文件_写出(self.debug_file, line)
+                    logger.info(f"{debug_file}写入数据\r\n{line}")
 
             if self._debug:
                 logger.info(f"收到数据\r\n{line}")
