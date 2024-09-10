@@ -1,5 +1,4 @@
 import os
-
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, inspect, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.exc import OperationalError, SQLAlchemyError, IntegrityError
@@ -8,8 +7,10 @@ import uuid
 import hashlib
 from dataclasses import dataclass
 from app.apiDB import apiDB
+from app.db.reqCache import ReqCache
+from app.db.reqLogs import ReqLog
 
-db = apiDB(os.path.join(os.path.dirname(__file__), 'api.yaml'))
+db = apiDB(os.path.join(os.path.dirname(__file__), '../api.yaml'))
 # 定义全局变量
 DB_PATH = db.config_server.get("db_path", "")
 if DB_PATH == "":
@@ -17,43 +18,6 @@ if DB_PATH == "":
     exit()
 
 Base = declarative_base()
-
-
-class ReqLog(Base):
-    __tablename__ = 'req_logs'
-
-    id = Column(Integer, primary_key=True, autoincrement=True, comment='主键ID')
-    time = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, comment='请求时间')
-    req_id = Column(String(36), nullable=False, index=True, comment='请求ID')
-    service_provider = Column(String(50), nullable=False, comment='服务提供商')
-    token = Column(String(100), nullable=False, comment='用户令牌')
-    model = Column(String(50), nullable=False, comment='使用的模型')
-    prompt = Column(Integer, nullable=False, default=0, comment='提示词token数')
-    completion = Column(Integer, nullable=False, default=0, comment='完成的内容token数')
-    quota = Column(Float, nullable=False, default=0.0, comment='消耗的配额')
-    uri = Column(String(255), nullable=False, comment='请求URI')
-    request_data = Column(Text, nullable=False, comment='请求数据')
-    response_data = Column(Text, nullable=True, comment='响应数据')
-    api_status = Column(String(10), nullable=True, comment='api状态码')
-    api_error = Column(Text, nullable=True, comment='api错误信息')
-    status = Column(String(20), nullable=False, default='pending', comment='请求状态')
-    created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, comment='创建时间')
-    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow,
-                        comment='更新时间')
-    md5 = Column(String(32), nullable=False, index=True, comment='MD5哈希，用于缓存')
-
-
-class ReqCache(Base):
-    __tablename__ = 'req_cache'
-
-    id = Column(Integer, primary_key=True, autoincrement=True, comment='主键ID')
-    created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, comment='创建时间')
-    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow,
-                        comment='更新时间')
-    md5 = Column(String(32), nullable=False, unique=True, index=True, comment='MD5哈希')
-    req = Column(Text, nullable=False, comment='请求数据')
-    resp = Column(Text, nullable=False, comment='响应数据')
-    hit_count = Column(Integer, nullable=False, default=0, comment='命中次数')
 
 
 class RequestLogger:

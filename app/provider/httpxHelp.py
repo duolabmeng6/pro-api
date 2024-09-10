@@ -7,7 +7,7 @@ from typing import AsyncGenerator
 
 import httpx
 
-from app.logDB import CacheManager
+from app.db.logDB import CacheManager
 
 
 async def raise_for_status(sendReady, response: httpx.Response):

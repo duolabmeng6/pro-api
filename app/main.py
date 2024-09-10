@@ -6,14 +6,14 @@ from types import SimpleNamespace
 from fastapi.routing import APIRoute
 
 from app.log import logger
-from app.logDB import RequestLogger
+from app.db.logDB import RequestLogger
 from app.provider.load_providers import load_providers
 from app.routers.router import api_router
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException, Request, Header
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
@@ -23,8 +23,6 @@ from app.error_info import generate_error_response
 from apiDB import apiDB
 import uuid
 import pyefun
-
-import asyncio
 
 db = apiDB(os.path.join(os.path.dirname(__file__), './api.yaml'))
 ai_manager = load_providers(db)
@@ -44,12 +42,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(api_router, prefix="")
 
-from fastapi.staticfiles import StaticFiles
-
-# 设置./web为静态目录
-app.mount("/", StaticFiles(directory="./public", html=True), name="static")
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -200,6 +193,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(api_router, prefix="")
+
+from fastapi.staticfiles import StaticFiles
+
+# 设置./web为静态目录
+app.mount("/", StaticFiles(directory="./public", html=True), name="static")
 
 
 
