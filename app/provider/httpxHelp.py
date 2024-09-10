@@ -67,11 +67,10 @@ async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:
     cache_md5 = hashlib.md5(json.dumps(sendReady['body']).encode('utf-8')).hexdigest()
     cache = cacheManager.get_from_cache(cache_md5)
     if cache:
-        print(f"成功从缓存中获取数据：{cache.resp}")
-        print(f"缓存命中次数：{cache.hit_count}")
+        print(f"db Cache hit:：{cache.hit_count}")
         if sendReady["stream"]:
             data = cache.resp
-            arr = data.split("\n")
+            arr = data.split("\r\n")
             for line in arr:
                 line = line.strip()
                 if line != "":

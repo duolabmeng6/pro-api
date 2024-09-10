@@ -1,90 +1,28 @@
 import asyncio
-import os
-from typing import Dict, Any, AsyncGenerator, Tuple
+from typing import AsyncGenerator
 from fastapi import HTTPException
-import json
-from app.provider.httpxHelp import get_api_data, get_api_data_cache
+from app.provider.baseProvider import baseProvider
 from app.log import logger
-from app.provider.openaiSSEHandler import openaiSSEHandler as SSEHandler
+from app.provider.openaiSSEHandler import openaiSSEHandler as SSEHandler  # 改这里
 from app.provider.openaiSendBodyHeandler import openaiSendBodyHeandler
-import pyefun
 
 
-class openaiProvider:
+class openaiProvider(baseProvider):
     def __init__(self, api_key: str, base_url: str = "https://api.openai.com/v1"):
+        super().__init__()
         self.api_key = api_key
         self.base_url = base_url
-        self.DataHeadler = SSEHandler
-        self._debug = True
-        self._cache = True
         self.setDebugSave("openai")
-
-    def setDebugSave(self, name="openai"):
-        name = name.replace("/", "-")
-        # 获取当前脚本所在的目录
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        # 构造文件的绝对路径
-        self._debugfile_sse = os.path.join(current_dir + f"/debugdata/{name}_sse.txt")
-        self._debugfile_data = os.path.join(current_dir + f"/debugdata/{name}_data.txt")
-        self.debug_file = ""
-
-    async def debugRtCache(self, request):
-        self.debug_file = self._debugfile_sse if request.get("stream", False) else self._debugfile_data
-        if self._debug:
-            error = False
-            if self._cache:
-                logger.info(f"使用缓存{self.debug_file}")
-                try:
-                    data = pyefun.读入文本(self.debug_file)
-                    if not request.get("stream", False):
-                        if data != "":
-                            yield data
-
-                    arr = pyefun.分割文本(data, "\n")
-                    for line in arr:
-                        line = line.strip()
-                        if line != "":
-                            yield line
-                            error = True
-
-                except FileNotFoundError:
-                    error = False
-                    logger.warning(f"Debug file {self.debug_file} not found, it will be created in write mode.")
-            if error:
-                yield "停止"
-                return
-            if pyefun.文件是否存在(self.debug_file):
-                pyefun.删除文件(self.debug_file)
-
-    async def sendChatCompletions(self, pushdata) -> AsyncGenerator[str, None]:
-        # logger.info(f"\r\nsend {url} \r\nbody:\r\n{json.dumps(body, indent=4, ensure_ascii=False)}")
-        # 调试部分 不要看
-        async for i in self.debugRtCache(pushdata):
-            if i == "停止":
-                return
-            else:
-                yield i
-
-        # 看这里 ==========
-        async for line in get_api_data_cache(pushdata):
-            if self._cache:
-                if pushdata.get("stream", False):
-                    pyefun.文件_追加文本(self.debug_file, line)
-                else:
-                    pyefun.文件_写出(self.debug_file, line)
-
-            if self._debug:
-                logger.info(f"收到数据\r\n{line}")
-            yield line
+        self.DataHeadler = SSEHandler
 
     async def chat2api(self, request, request_model_name: str = "", id: str = "") -> AsyncGenerator[
         str, None]:
         model = request.get('model', "")
-        logger.name = f"openaiProvider.{id}.request.model"
+        logger.name = f"openaiProvider.{id}.model.{model}"
 
         sendReady = openaiSendBodyHeandler(self.api_key, self.base_url, model)
         sendReady.header_openai(request)
-        pushdata = sendReady.get_oepnai()
+        pushdata = sendReady.get_oepnai()  # 改这里
 
         try:
             genData = self.sendChatCompletions(pushdata)
@@ -116,15 +54,15 @@ class openaiProvider:
 
 if __name__ == "__main__":
     async def main():
-        from app.apiDB import Database
-        db = Database("../../api.yaml")
+        from app.apiDB import apiDB
+        db = apiDB("../../api.yaml")
         model_test = [
-            "gpt-4o",
+            # "gpt-4o",
             # "glm-4-flash",
             # "doubao-pro-128k",
             # "moonshot-v1-128k",
             # "qwen2-72b",
-            # "deepseek-coder"
+            "deepseek-coder"
         ]
         for model_name in model_test:
             providers, error = db.get_user_provider("sk-111111", model_name)
@@ -137,17 +75,18 @@ if __name__ == "__main__":
             interface = openaiProvider(api_key, base_url)
             interface.setDebugSave(f"{model_name}_{provider['provider']}")
             interface._debug = True
-            interface._cache = True
+            interface._cache = False
+            # interface._dbcache = True
 
             content = ""
             async for response in interface.chat2api({
                 "model": model_name,
                 "messages": [{"role": "user", "content": "请用三句话描述春天。"}],
-                "stream": False,
+                "stream": True,
             }):
                 # content += response
                 # logger.info( response)
-                logger.info(response)
+                print(response)
 
 
     asyncio.run(main())

@@ -1,3 +1,5 @@
+import os
+
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, inspect, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.exc import OperationalError, SQLAlchemyError, IntegrityError
@@ -5,8 +7,17 @@ import datetime
 import uuid
 import hashlib
 from dataclasses import dataclass
+from app.apiDB import apiDB
+
+db = apiDB(os.path.join(os.path.dirname(__file__), 'api.yaml'))
+# 定义全局变量
+DB_PATH = db.config_server.get("db_path", "")
+if DB_PATH == "":
+    print("没有配置数据库")
+    exit()
 
 Base = declarative_base()
+
 
 class ReqLog(Base):
     __tablename__ = 'req_logs'
@@ -27,23 +38,27 @@ class ReqLog(Base):
     api_error = Column(Text, nullable=True, comment='api错误信息')
     status = Column(String(20), nullable=False, default='pending', comment='请求状态')
     created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, comment='创建时间')
-    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow, comment='更新时间')
+    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow,
+                        comment='更新时间')
     md5 = Column(String(32), nullable=False, index=True, comment='MD5哈希，用于缓存')
+
 
 class ReqCache(Base):
     __tablename__ = 'req_cache'
 
     id = Column(Integer, primary_key=True, autoincrement=True, comment='主键ID')
     created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, comment='创建时间')
-    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow, comment='更新时间')
+    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow,
+                        comment='更新时间')
     md5 = Column(String(32), nullable=False, unique=True, index=True, comment='MD5哈希')
     req = Column(Text, nullable=False, comment='请求数据')
     resp = Column(Text, nullable=False, comment='响应数据')
     hit_count = Column(Integer, nullable=False, default=0, comment='命中次数')
 
+
 class RequestLogger:
-    def __init__(self, db_name='sqlite:///request_log.db'):
-        self.engine = create_engine(db_name)
+    def __init__(self):
+        self.engine = create_engine(DB_PATH)
         self.Session = sessionmaker(bind=self.engine)
         self.sync_table_structure()
 
@@ -76,7 +91,8 @@ class RequestLogger:
     def _generate_md5(self, data):
         return hashlib.md5(data.encode('utf-8')).hexdigest()
 
-    def insert_req_log(self, req_id, service_provider, token, model, prompt, completion, quota, uri, request_data, response_data):
+    def insert_req_log(self, req_id, service_provider, token, model, prompt, completion, quota, uri, request_data,
+                       response_data):
         session = self.Session()
         try:
             md5 = self._generate_md5(request_data)
@@ -123,7 +139,7 @@ class RequestLogger:
             raise e
         finally:
             session.close()
-            
+
     def get_log_by_md5(self, md5):
         session = self.Session()
         try:
@@ -136,8 +152,8 @@ class RequestLogger:
 
 
 class CacheManager:
-    def __init__(self, db_name='sqlite:///request_log.db'):
-        self.engine = create_engine(db_name)
+    def __init__(self):
+        self.engine = create_engine(DB_PATH)
         self.Session = sessionmaker(bind=self.engine)
         self.sync_table_structure()
 
@@ -149,17 +165,15 @@ class CacheManager:
         try:
             existing_cache = session.query(ReqCache).filter_by(md5=md5).first()
             if existing_cache:
-                pass
                 # 如果缓存已存在，更新它
-                # existing_cache.req = req
-                # existing_cache.resp = resp
-                # existing_cache.hit_count = 0  # 重置命中次数
+                existing_cache.req = req
+                existing_cache.resp = resp
+                existing_cache.hit_count = 0  # 重置命中次数
             else:
                 # 如果缓存不存在，创建新的缓存项
                 new_cache = ReqCache(md5=md5, req=req, resp=resp)
                 session.add(new_cache)
-                session.commit()
-                
+            session.commit()
             print(f"缓存已{'更新' if existing_cache else '添加'}")
         except Exception as e:
             session.rollback()
@@ -175,9 +189,23 @@ class CacheManager:
             if cache:
                 cache.hit_count += 1
                 session.commit()
-                return CacheData(md5=cache.md5, req=cache.req, resp=cache.resp, hit_count=cache.hit_count, created_at=cache.created_at, updated_at=cache.updated_at)
+                return CacheData(md5=cache.md5, req=cache.req, resp=cache.resp, hit_count=cache.hit_count,
+                                 created_at=cache.created_at, updated_at=cache.updated_at)
             return None
         except Exception as e:
+            raise e
+        finally:
+            session.close()
+
+    def update_cache_hit_count(self, md5):
+        session = self.Session()
+        try:
+            cache = session.query(ReqCache).filter_by(md5=md5).first()
+            if cache:
+                cache.hit_count += 1
+                session.commit()
+        except Exception as e:
+            session.rollback()
             raise e
         finally:
             session.close()
@@ -191,11 +219,12 @@ class CacheData:
     hit_count: int
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    
+
+
 if __name__ == '__main__':
     logger = RequestLogger()
     cache_manager = CacheManager()
-    
+
     # 生成请求ID和测试数据
     req_id = str(uuid.uuid4())
     request_data = '{"messages": [{"role": "user", "content": "Python的优点是什么？"}]}'
@@ -247,7 +276,6 @@ if __name__ == '__main__':
     else:
         print("未找到缓存数据")
 
-
     # 测试重复添加相同的缓存项
     cache_manager.add_to_cache(cache_md5, "测试缓存请求（更新）", "测试缓存响应（更新）")
     updated_cache = cache_manager.get_from_cache(cache_md5)
@@ -257,4 +285,3 @@ if __name__ == '__main__':
         print(f"更新后的命中次数：{updated_cache.updated_at}")
     else:
         print("未找到更新后的缓存数据")
-
