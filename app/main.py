@@ -3,6 +3,7 @@ import sys
 import os
 from types import SimpleNamespace
 from app.log import logger
+from app.logDB import RequestLogger
 from app.provider.test import load_providers
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -20,6 +21,7 @@ import uuid
 
 db = apiDB(os.path.join(os.path.dirname(__file__), './api.yaml'))
 ai_manager = load_providers(db)
+request_logger = RequestLogger()
 
 # 添加一个访问计数器
 request_counter = 0
@@ -91,14 +93,12 @@ async def chat_completions(
         api_key: str = Depends(verify_api_key),
         req: Request = Request
 ):
-    
     try:
         body = json.loads(await req.body())
     except:
         raise HTTPException(status_code=500, detail="body解析失败")
 
     request = SimpleNamespace(**body)
-    # 检查api_key和当前的请求的model是有可用模型
     providers, error = db.get_user_provider(api_key, request.model)
     if not providers:
         raise HTTPException(status_code=500, detail=error)
@@ -110,12 +110,7 @@ async def chat_completions(
 
     logger.info(f"请求计数: {request_counter}, 服务提供者:{provider['provider']}, 请求模型:{request.model}, 当前模型:{provider.get('mapped_model')}, 名称:{provider.get('name')}")
 
-    # logger.info(
-    #     f"服务提供者:{provider['provider']} 请求模型:{request.model} 当前模型:{provider.get('mapped_model')} 名称:{provider.get('name')}")
-
-    # 创建openai接口
     ai_chat = getProvider(provider)
-
     debug = db.config_server.get("debug", False)
     if debug:
         ai_chat.setDebugSave(f"{provider.get('mapped_model')}_{provider.get('provider')}_{request.id}")
@@ -127,24 +122,67 @@ async def chat_completions(
         ai_chat._cache = False
         ai_chat._debug = False
 
-    request_model_name = request.model  # 用户请求的模型名称
-    body["model"] = provider.get("mapped_model")  # 请求对应的api的模型名称
+    request_model_name = request.model
+    body["model"] = provider.get("mapped_model")
+
+    # 先插入日志记录
+    service_provider = f"{provider.get('provider', '')}_{provider.get('name', '')}"
+    request_logger.insert_req_log(
+        req_id=id,
+        service_provider=service_provider,
+        token=api_key,
+        model=request.model,
+        prompt=0,
+        completion=0,
+        quota=0,
+        uri=req.url.path,
+        request_data=json.dumps(body),
+        response_data=""
+    )
 
     genData = ai_chat.chat2api(body, request_model_name, id)
     first_chunk = await genData.__anext__()
+    
     if not request.stream:
         if debug:
             logger.info(f"发送到客户端\r\n{first_chunk}")
+
+        stats_data = ai_chat.DataHeadler.get_stats()
+        logger.info(f"SSE 数据迭代完成，统计信息：{stats_data}")
+        
+        # 更新日志记录
+        request_logger.update_req_log(
+            req_id=id,
+            prompt=stats_data["prompt_tokens"],
+            completion=stats_data["completion_tokens"],
+            quota=0,  # 假设每1000个token花费0.002美元
+            response_data=json.dumps(stats_data),
+            api_status="200",
+            api_error=""
+        )
         return first_chunk
+    
     if first_chunk:
         async def generate_stream():
             async for chunk in genData:
                 if debug:
                     logger.info(f"发送到客户端\r\n{chunk}")
                 yield chunk + "\r\n\r\n"
+
             stats_data = ai_chat.DataHeadler.get_stats()
-            yield f"data: {json.dumps(stats_data)}\n\n"
             logger.info(f"SSE 数据迭代完成，统计信息：{stats_data}")
+            
+            # 更新日志记录
+            request_logger.update_req_log(
+                req_id=id,
+                prompt=stats_data["prompt_tokens"],
+                completion=stats_data["completion_tokens"],
+                quota=0,  # 假设每1000个token花费0.002美元
+                response_data=json.dumps(stats_data),
+                api_status="200",
+                api_error=""
+            )
+        
         return StreamingResponse(generate_stream(), media_type="text/event-stream")
 
 app.add_middleware(

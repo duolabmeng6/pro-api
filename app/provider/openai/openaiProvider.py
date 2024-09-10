@@ -3,7 +3,7 @@ import os
 from typing import Dict, Any, AsyncGenerator, Tuple
 from fastapi import HTTPException
 import json
-from app.provider.httpxHelp import get_api_data
+from app.provider.httpxHelp import get_api_data, get_api_data_cache
 from app.log import logger
 from app.provider.openaiSSEHandler import openaiSSEHandler as SSEHandler
 from app.provider.openaiSendBodyHeandler import openaiSendBodyHeandler
@@ -56,28 +56,19 @@ class openaiProvider:
             if pyefun.文件是否存在(self.debug_file):
                 pyefun.删除文件(self.debug_file)
 
-    async def sendChatCompletions(self, request) -> AsyncGenerator[str, None]:
-        id = request.get('id', "")
-        model = request.get('model', "")
-        logger.name = f"openaiProvider.{id}.request.model"
-        sendReady = openaiSendBodyHeandler(self.api_key, self.base_url, model)
-        sendReady.header_openai(request)
-        pushdata = sendReady.get_oepnai()
-        url = pushdata["url"]
-        body = pushdata["body"]
-
+    async def sendChatCompletions(self, pushdata) -> AsyncGenerator[str, None]:
         # logger.info(f"\r\nsend {url} \r\nbody:\r\n{json.dumps(body, indent=4, ensure_ascii=False)}")
-
         # 调试部分 不要看
-        async for i in self.debugRtCache(request):
+        async for i in self.debugRtCache(pushdata):
             if i == "停止":
                 return
             else:
                 yield i
 
-        async for line in get_api_data(pushdata):
+        # 看这里 ==========
+        async for line in get_api_data_cache(pushdata):
             if self._cache:
-                if request.get("stream", False):
+                if pushdata.get("stream", False):
                     pyefun.文件_追加文本(self.debug_file, line)
                 else:
                     pyefun.文件_写出(self.debug_file, line)
@@ -88,9 +79,15 @@ class openaiProvider:
 
     async def chat2api(self, request, request_model_name: str = "", id: str = "") -> AsyncGenerator[
         str, None]:
+        model = request.get('model', "")
+        logger.name = f"openaiProvider.{id}.request.model"
+
+        sendReady = openaiSendBodyHeandler(self.api_key, self.base_url, model)
+        sendReady.header_openai(request)
+        pushdata = sendReady.get_oepnai()
 
         try:
-            genData = self.sendChatCompletions(request)
+            genData = self.sendChatCompletions(pushdata)
             first_chunk = await genData.__anext__()
         except Exception as e:
             logger.error("报错了chat2api %s", e)
@@ -100,8 +97,6 @@ class openaiProvider:
         if not request.get("stream", False):
             content = self.DataHeadler.handle_data_line(first_chunk)
             yield content
-            # stats_data =  self.DataHeadler.get_stats()
-            # logger.info(f"SSE 数据流迭代完成，统计信息：{stats_data}")
             return
 
         # 流处理的代码
@@ -117,9 +112,6 @@ class openaiProvider:
                 break
             if content:
                 yield "data: " + content
-        # stats_data =  self.DataHeadler.get_stats()
-        # logger.info(f"SSE 数据流迭代完成，统计信息：{stats_data}")
-        # logger.info(f"转换为普通：{handler.generate_response()}")
 
 
 if __name__ == "__main__":

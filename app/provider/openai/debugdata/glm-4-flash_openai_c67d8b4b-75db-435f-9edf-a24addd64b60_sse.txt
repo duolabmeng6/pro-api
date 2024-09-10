@@ -1,0 +1,2 @@
+data: {"id":"20240910124543ec8cd92719a348d2","created":1725943543,"model":"glm-4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"我是一个"}}]}
+[DONE]

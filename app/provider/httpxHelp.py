@@ -1,7 +1,13 @@
+import hashlib
+import json
+
+from duckduckgo_search.utils import json_dumps
 from fastapi import HTTPException
 from typing import AsyncGenerator
 
 import httpx
+
+from app.logDB import CacheManager
 
 
 async def raise_for_status(response: httpx.Response):
@@ -52,6 +58,57 @@ async def get_api_data(sendReady) -> AsyncGenerator[str, None]:
         await raise_for_status(response)
         response_text = response.content.decode("utf-8")
         yield response_text
+
+
+cacheManager = CacheManager()
+
+
+async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:
+    cache_md5 = hashlib.md5(json.dumps(sendReady['body']).encode('utf-8')).hexdigest()
+    cache = cacheManager.get_from_cache(cache_md5)
+    if cache:
+        print(f"成功从缓存中获取数据：{cache.resp}")
+        print(f"缓存命中次数：{cache.hit_count}")
+        if sendReady["stream"]:
+            data = cache.resp
+            arr = data.split("\n")
+            for line in arr:
+                line = line.strip()
+                if line != "":
+                    yield line
+        else:
+            yield cache.resp
+        return 
+        
+    cacheData = ""
+    if sendReady["stream"]:
+        async with client.stream("POST", sendReady["url"], headers=sendReady["headers"],
+                                 json=sendReady["body"]) as response:
+            await raise_for_status(response)
+            buffer = ""
+            async for chunk in response.aiter_text():
+                buffer += chunk
+                while '\n' in buffer:
+                    line, buffer = buffer.split('\n', 1)
+                    line = line.strip()
+                    if line.startswith('data:'):  # 只处理 SSE 数据行
+                        cacheData = cacheData + line + "\r\n"
+                        if line == "data: [DONE]":
+                            cacheManager.add_to_cache(cache_md5, json_dumps(sendReady["body"]), cacheData)
+                        yield line
+
+            cacheData = cacheData + "[DONE]"
+            cacheManager.add_to_cache(cache_md5, json_dumps(sendReady["body"]), cacheData)
+            yield "[DONE]"
+    else:
+        # 非流式请求
+        response = await client.post(sendReady["url"], headers=sendReady["headers"], json=sendReady["body"])
+        await raise_for_status(response)
+        response_text = response.content.decode("utf-8")
+        cacheData = response_text
+        cacheManager.add_to_cache(cache_md5, json_dumps(sendReady["body"]), cacheData)
+        yield response_text
+
 
 def get_api_data2(sendReady):
     import logging
