@@ -1,7 +1,9 @@
+import asyncio
 import sys
 import os
 import time
 
+from starlette.types import Scope, Send, Receive
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pydantic import BaseModel
@@ -106,6 +108,7 @@ class ChatCompletionRequest(BaseModel):
     id: str = None
 
 
+@app.post("/chat/completions")
 @app.post("/v1/chat/completions")
 async def chat_completions(
         api_key: str = Depends(verify_api_key),
@@ -187,6 +190,7 @@ async def chat_completions(
     if first_chunk:
         async def generate_stream():
             async for chunk in genData:
+                yield chunk + "\n\n"
                 if debug:
                     await asyncio.sleep(0.1)
                     logger.info(f"发送到客户端\r\n{chunk}")
@@ -237,6 +241,13 @@ def reload_config():
     return f"已经执行刷新配置{time.time()}"
 
 
+class GzipStaticFiles(StaticFiles):
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http":
+            gzip_middleware = GZipMiddleware(super().__call__, minimum_size=100 * 1024,compresslevel=9)
+            await gzip_middleware(scope, receive, send)
+        else:
+            await super().__call__(scope, receive, send)
 
 
 if db.config_server.get("admin_server", False):
@@ -244,6 +255,9 @@ if db.config_server.get("admin_server", False):
     request_logger = RequestLogger()
     from app.routers.router import api_router
     app.include_router(api_router, prefix="")
+    # app.mount("/", StaticFiles(directory="./public", html=True), name="static")
+    # app.add_middleware(GZipMiddleware, minimum_size=100 * 1024)
+    app.mount("/", GzipStaticFiles(directory="./public", html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
