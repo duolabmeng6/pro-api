@@ -1,4 +1,5 @@
 import os
+from http.client import HTTPException
 from typing import Dict, Any, AsyncGenerator, Tuple
 from app.provider.httpxHelp import get_api_data, get_api_data_cache
 from app.log import logger
@@ -7,10 +8,11 @@ import pyefun
 
 class baseProvider:
     def __init__(self):
-        self._debug = True
-        self._cache = True
-        self._dbcache = True
+        self._debug = False
+        self._cache = False
+        self._dbcache = False
         self.setDebugSave("openai")
+        self.DataHeadler = None
 
     def setDebugSave(self, name="openai"):
         name = name.replace("/", "-")
@@ -77,41 +79,37 @@ class baseProvider:
                 logger.info(f"收到数据\r\n{line}")
             yield line
 
-    async def chat2api(self, request, request_model_name: str = "", id: str = "") -> AsyncGenerator[
+    async def chat2api_super(self, request, request_model_name: str = "", id: str = "", pushdata="") -> AsyncGenerator[
         str, None]:
         pass
 
-        # model = request.get('model', "")
-        # logger.name = f"openaiProvider.{id}.request.model"
-        #
-        # sendReady = openaiSendBodyHeandler(self.api_key, self.base_url, model)
-        # sendReady.header_openai(request)
-        # pushdata = sendReady.get_oepnai()
-        #
-        # try:
-        #     genData = self.sendChatCompletions(pushdata)
-        #     first_chunk = await genData.__anext__()
-        # except Exception as e:
-        #     logger.error("报错了chat2api %s", e)
-        #     raise HTTPException(status_code=404, detail=e)
-        #
-        # self.DataHeadler = SSEHandler(id, request_model_name)
-        # if not request.get("stream", False):
-        #     content = self.DataHeadler.handle_data_line(first_chunk)
-        #     yield content
-        #     return
-        #
-        # # 流处理的代码
-        # yield True
-        # yield "data: " + self.DataHeadler.generate_sse_response(None)
-        # content = self.DataHeadler.handle_SSE_data_line(first_chunk)
-        # if content:
-        #     yield "data: " + content
-        # async for chunk in genData:
-        #     content = self.DataHeadler.handle_SSE_data_line(chunk)
-        #     if content == "[DONE]":
-        #         yield "data: [DONE]"
-        #         break
-        #     if content:
-        #         yield "data: " + content
-        #
+
+        try:
+            genData = self.sendChatCompletions(pushdata)
+            first_chunk = await genData.__anext__()
+        except Exception as e:
+            logger.error("报错了chat2api %s", e)
+            raise HTTPException(status_code=404, detail=e)
+
+        if not request.get("stream", False):
+            content = self.DataHeadler.handle_data_line(first_chunk)
+            yield content
+            return
+
+        # 流处理的代码
+        yield True
+        yield "data: " + self.DataHeadler.generate_sse_response(None)
+        content = self.DataHeadler.handle_SSE_data_line(first_chunk)
+        if content:
+            yield "data: " + content
+
+        DONE = False
+        async for chunk in genData:
+            content = self.DataHeadler.handle_SSE_data_line(chunk)
+            if content == "[DONE]":
+                DONE = True
+                continue
+            if content:
+                yield "data: " + content
+        if DONE:
+            yield "data: " + content

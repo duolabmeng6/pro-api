@@ -19,37 +19,12 @@ class openaiProvider(baseProvider):
         str, None]:
         model = request.get('model', "")
         logger.name = f"openaiProvider.{id}.model.{model}"
-
         sendReady = openaiSendBodyHeandler(self.api_key, self.base_url, model)
         sendReady.header_openai(request)
         pushdata = sendReady.get_oepnai()  # 改这里
-
-        try:
-            genData = self.sendChatCompletions(pushdata)
-            first_chunk = await genData.__anext__()
-        except Exception as e:
-            logger.error("报错了chat2api %s", e)
-            raise HTTPException(status_code=404, detail=e)
-
         self.DataHeadler = SSEHandler(id, request_model_name)
-        if not request.get("stream", False):
-            content = self.DataHeadler.handle_data_line(first_chunk)
-            yield content
-            return
-
-        # 流处理的代码
-        yield True
-        yield "data: " + self.DataHeadler.generate_sse_response(None)
-        content = self.DataHeadler.handle_SSE_data_line(first_chunk)
-        if content:
-            yield "data: " + content
-        async for chunk in genData:
-            content = self.DataHeadler.handle_SSE_data_line(chunk)
-            if content == "[DONE]":
-                yield "data: [DONE]"
-                break
-            if content:
-                yield "data: " + content
+        async for chunk in self.chat2api_super(request, request_model_name, id, pushdata):
+            yield chunk
 
 
 if __name__ == "__main__":

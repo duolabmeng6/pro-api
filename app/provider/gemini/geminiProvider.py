@@ -19,38 +19,14 @@ class geminiProvider(baseProvider):
     async def chat2api(self, request, request_model_name: str = "", id: str = "") -> AsyncGenerator[
         str, None]:
         model = request.get('model', "")
-        logger.name = f"geminiProvider.{id}.model.{model}"
-
+        logger.name = f"openaiProvider.{id}.model.{model}"
         sendReady = openaiSendBodyHeandler(self.api_key, self.base_url, model)
         sendReady.header_openai(request)
         pushdata = sendReady.get_Gemini()  # 改这里
-
-        try:
-            genData = self.sendChatCompletions(pushdata)
-            first_chunk = await genData.__anext__()
-        except Exception as e:
-            logger.error("报错了chat2api %s", e)
-            raise HTTPException(status_code=404, detail=e)
-
         self.DataHeadler = SSEHandler(id, request_model_name)
-        if not request.get("stream", False):
-            content = self.DataHeadler.handle_data_line(first_chunk)
-            yield content
-            return
+        async for chunk in self.chat2api_super(request, request_model_name, id, pushdata):
+            yield chunk
 
-        # 流处理的代码
-        yield True
-        yield "data: " + self.DataHeadler.generate_sse_response(None)
-        content = self.DataHeadler.handle_SSE_data_line(first_chunk)
-        if content:
-            yield "data: " + content
-        async for chunk in genData:
-            content = self.DataHeadler.handle_SSE_data_line(chunk)
-            if content == "[DONE]":
-                yield "data: [DONE]"
-                break
-            if content:
-                yield "data: " + content
 
 if __name__ == "__main__":
     async def main():
@@ -61,14 +37,14 @@ if __name__ == "__main__":
         print(provider)
         interface = geminiProvider(provider['api_key'], provider['base_url'])
         interface.setDebugSave("weather-geminia_" + provider['mapped_model'])
-        interface._debug = True
-        interface._cache = True
+        # interface._debug = True
+        # interface._cache = True
         model_name = provider['mapped_model']
         # 读取JSON文件
         async for response in interface.chat2api({
             "model": model_name,
             "messages": [{"role": "user", "content": "请用三句话描述春天。"}],
-            "stream": False,
+            "stream": True,
         }):
             print(response)
 
