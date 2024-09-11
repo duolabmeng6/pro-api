@@ -7,12 +7,13 @@ from app.api_data import db
 
 if db.config_server.get("admin_server", False):
     from app.db.logDB import CacheManager
+
     cacheManager = CacheManager()
 
 
 async def raise_for_status(sendReady, response: httpx.Response):
     if response.status_code == 200:
-        # print("raise_for_status",response.status_code )
+        print("raise_for_status", response.status_code)
         return
     response_content = await response.aread()
     error_data = {
@@ -44,31 +45,45 @@ client = httpx.AsyncClient(
 
 
 async def get_api_data(sendReady) -> AsyncGenerator[str, None]:
-    DONE = False
-    if sendReady["stream"]:
-        async with client.stream("POST", sendReady["url"], headers=sendReady["headers"],
-                                 json=sendReady["body"]) as response:
+    try:
+        DONE = False
+        if sendReady["stream"]:
+            async with client.stream("POST", sendReady["url"], headers=sendReady["headers"],
+                                     json=sendReady["body"]) as response:
+                await raise_for_status(sendReady, response)
+                buffer = ""
+                async for chunk in response.aiter_text():
+                    buffer += chunk
+                    while '\n' in buffer:
+                        line, buffer = buffer.split('\n', 1)
+                        line = line.strip()
+                        if line.startswith('data:'):  # 只处理 SSE 数据行
+                            yield line
+                            if line == "data: [DONE]":
+                                DONE = True
+                if not DONE:
+                    yield "data: [DONE]"
+        else:
+            # 非流式请求
+            response = await client.post(sendReady["url"], headers=sendReady["headers"], json=sendReady["body"])
             await raise_for_status(sendReady, response)
-            buffer = ""
-            async for chunk in response.aiter_text():
-                buffer += chunk
-                while '\n' in buffer:
-                    line, buffer = buffer.split('\n', 1)
-                    line = line.strip()
-                    if line.startswith('data:'):  # 只处理 SSE 数据行
-                        yield line
-                        if line == "data: [DONE]":
-                            DONE = True
-            if not DONE:
-                yield "data: [DONE]"
-    else:
-        # 非流式请求
-        response = await client.post(sendReady["url"], headers=sendReady["headers"], json=sendReady["body"])
-        await raise_for_status(sendReady, response)
-        response_text = response.content.decode("utf-8")
-        yield response_text
+            response_text = response.content.decode("utf-8")
+            yield response_text
 
-
+    except httpx.RequestError as e:
+        error_data = {
+            "error": "网络请求错误",
+            "detail": str(e),
+            "response_body": sendReady['url'],
+        }
+        raise HTTPException(status_code=503, detail=error_data)
+    except Exception as e:
+        error_data = {
+            "error": "上游服务器出现未知错误",
+            "detail": str(e),
+            "response_body": sendReady['url'],
+        }
+        raise HTTPException(status_code=500, detail=error_data)
 
 
 async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:
@@ -122,8 +137,6 @@ async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:
         if cacheData:
             print(f"db Cache 保存{cache_md5}: {cacheData}")
             cacheManager.add_to_cache(cache_md5, json.dumps(sendReady["body"]), cacheData)
-
-
 
 
 def get_api_data2(sendReady):

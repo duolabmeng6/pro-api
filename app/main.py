@@ -57,6 +57,8 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         detail = exc.detail.detail
         status_code = 500
         message = detail.get("error")
+    else:
+        detail = exc.detail
 
     return JSONResponse(
         status_code=status_code,
@@ -247,6 +249,6 @@ if __name__ == "__main__":
         "__main__:app",
         host="0.0.0.0",
         port=8000,
-        # reload=True,
+        reload=True,
         # workers=1,
     )

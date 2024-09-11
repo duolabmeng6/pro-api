@@ -50,6 +50,9 @@ def load_providers(db):
         # 将聊天实例添加到 ai_manager
         ai_manager.set_chat(name, chat)
         save_chat[name] = True
+    logger.info(f"token")
+    logger.info(db.tokens)
+
     return ai_manager
 
 

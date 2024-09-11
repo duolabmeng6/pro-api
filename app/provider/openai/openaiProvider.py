@@ -27,18 +27,17 @@ class openaiProvider(baseProvider):
 
 if __name__ == "__main__":
     async def main():
-        from api_data import db
-        db = apiDB("../../api.yaml")
+        from app.api_data import db
         model_test = [
             # "gpt-4o",
             # "glm-4-flash",
             # "doubao-pro-128k",
             # "moonshot-v1-128k",
             # "qwen2-72b",
-            "deepseek-coder"
+            "deepseek-chat"
         ]
         for model_name in model_test:
-            providers, error = db.get_user_provider("sk-111111", model_name)
+            providers, error = db.get_user_provider("sk-ll666666", model_name)
             provider = providers[0]
             api_key = provider['api_key']
             base_url = provider['base_url']

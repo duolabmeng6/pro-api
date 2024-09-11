@@ -1,7 +1,9 @@
 import os
-from http.client import HTTPException
+
 from typing import AsyncGenerator
 import pyefun
+from fastapi import HTTPException
+
 from app.log import logger
 from app.provider.httpxHelp import get_api_data, get_api_data_cache
 
