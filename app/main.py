@@ -20,6 +20,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
+from fastapi.middleware.gzip import GZipMiddleware
 
 from app.error_info import generate_error_response
 from apiDB import apiDB
@@ -44,6 +45,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(GZipMiddleware, minimum_size=100*1024)
 
 
 @app.exception_handler(HTTPException)
