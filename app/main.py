@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pydantic import BaseModel
@@ -19,7 +20,7 @@ import pyefun
 from app.log import logger
 
 
-from app.api_data import db, get_db
+from app.api_data import db, get_db, reload_db
 from app.provider.load_providers import load_providers
 
 ai_manager = load_providers(db)
@@ -226,9 +227,9 @@ app.add_middleware(
 @app.get("/reload_config")
 def reload_config():
     global ai_manager, db
-    db = get_db()
+    db = reload_db()
     ai_manager = load_providers(db)
-    return "已经执行刷新配置"
+    return f"已经执行刷新配置{time.time()}"
 
 
 if db.config_server.get("admin_server", False):

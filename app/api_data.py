@@ -58,6 +58,21 @@ def get_db():
     return _db_instance
 
 
+def reload_db():
+    global _config_context, _db_instance
+    _db_instance = None
+    if _db_instance is None:
+        _config_context = get_down_url_config()
+        if _config_context:
+            _db_instance = apiDB.apiDB(_config_context)
+        else:
+            api_file_path = os.path.join(os.path.dirname(__file__), './api.yaml')
+            print("加载本地配置文件")
+            _config_context = pyefun.读入文本(api_file_path)
+            _db_instance = apiDB.apiDB(_config_context)
+        print(f"配置文件加载状态: {'成功' if _config_context else '失败'}")
+    return _db_instance
+
 def get_down_url_config():
     if config_url:
         try:

@@ -102,8 +102,6 @@ tokens:
       - gpt-3.5-turbo
 
 server:
-    port: 8000
-    host: 0.0.0.0
     default_model: glm-4-flash # 如果匹配不到，则使用这个默认的模型
     debug: false
     admin_server: false # 是否启动后台功能 如果不启动则只转发不作任何记录
