@@ -1,9 +1,9 @@
+import datetime
 import os
-
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, inspect, text, or_
+import random
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, inspect, text, or_, func
 from sqlalchemy.orm import declarative_base, sessionmaker, class_mapper
 from sqlalchemy.exc import OperationalError, SQLAlchemyError, IntegrityError
-import datetime
 import uuid
 import hashlib
 from dataclasses import dataclass
@@ -27,7 +27,7 @@ class ReqLog(Base):
     req_id = Column(String(36), nullable=False, index=True, comment='请求ID')
     service_provider = Column(String(50), nullable=False, comment='服务提供商')
     token = Column(String(100), nullable=False, comment='用户令牌')
-    model = Column(String(50), nullable=False, comment='使用的模型')
+    model = Column(String(50), nullable=False, comment='���用的模型')
     prompt = Column(Integer, nullable=False, default=0, comment='提示词token数')
     completion = Column(Integer, nullable=False, default=0, comment='完成的内容token数')
     quota = Column(Float, nullable=False, default=0.0, comment='消耗的配额')
@@ -57,7 +57,7 @@ class RequestLogger:
                 if not inspector.has_table(table_name):
                     # 如果表不存在，创建它
                     table.create(self.engine)
-                    print(f"创建表 {table_name}")
+                    print(f"创建 {table_name}")
                 else:
                     # 如果表存在，检查并添加缺失的列
                     existing_columns = inspector.get_columns(table_name)
@@ -186,22 +186,187 @@ class RequestLogger:
             return False
         finally:
             session.close()
+            
+    def statistics(self):
+        session = self.Session()
+        try:
+            result = session.query(
+                ReqLog.model,
+                func.sum(ReqLog.prompt).label('total_prompt'),
+                func.sum(ReqLog.completion).label('total_completion')
+            ).group_by(ReqLog.model).all()
+            
+            return [
+                {
+                    'model': item.model,
+                    'prompt': item.total_prompt,
+                    'completion': item.total_completion
+                }
+                for item in result
+            ]
+        except SQLAlchemyError as e:
+            print(f"统计数据时出错: {str(e)}")
+            return []
+        finally:
+            session.close()
+
+    def statistics_model_day(self):
+        session = self.Session()
+        try:
+            # 使用本地时间，并扩大时间范围
+            end_date = datetime.datetime.now().date()
+            start_date = end_date - datetime.timedelta(days=7)
+            
+            print(f"查询时间范围: 从 {start_date} 到 {end_date}")
+
+            # 修改查询，使用between来查询时间范围
+            result = session.query(
+                func.date(ReqLog.time).label('date'),
+                ReqLog.model,
+                func.sum(ReqLog.prompt).label('total_prompt'),
+                func.sum(ReqLog.completion).label('total_completion')
+            ).filter(
+                func.date(ReqLog.time).between(start_date, end_date)
+            ).group_by(
+                func.date(ReqLog.time),
+                ReqLog.model
+            ).order_by(
+                func.date(ReqLog.time)
+            ).all()
+
+            print(f"查询结果: {result}")
+
+            # 获取所有唯一的日期和模型
+            dates = sorted(set(item.date for item in result))
+            models = sorted(set(item.model for item in result))
+            
+            print(f"检测到的日期: {dates}")
+            print(f"检测到的模型: {models}")
+
+            # 创建一个字典来存储每个日期和模型的数据
+            data_dict = {(date, model): {'prompt': 0, 'completion': 0} for date in dates for model in models}
+            
+            # 填充实际数据
+            for item in result:
+                data_dict[(item.date, item.model)] = {
+                    'prompt': item.total_prompt,
+                    'completion': item.total_completion
+                }
+
+            # 构造系列数据
+            series = []
+            for model in models:
+                prompt_data = [data_dict[(date, model)]['prompt'] for date in dates]
+                completion_data = [data_dict[(date, model)]['completion'] for date in dates]
+                
+                series.extend([
+                    {
+                        "name": f"{model} 提示词",
+                        "type": "line",
+                        "data": prompt_data
+                    },
+                    {
+                        "name": f"{model} 生成词",
+                        "type": "line",
+                        "data": completion_data
+                    }
+                ])
+
+            # 构造ECharts配置
+            echarts_config = {
+                "xAxis": {
+                    "type": "category",
+                    "data": dates  # 日期已经是字符串格式，无需再次格式化
+                },
+                "yAxis": {
+                    "type": "value"
+                },
+                "series": series,
+                "legend": {},
+                "tooltip": {
+                    "trigger": "axis"
+                }   
+            }
+
+            print(f"生成的ECharts配置: {echarts_config}")
+
+            return echarts_config
+
+        except SQLAlchemyError as e:
+            print(f"统计模型每日使用情况时出错: {str(e)}")
+            return {}
+        finally:
+            session.close()
+
+    def insert_random_test_data(self, num_entries=50):
+        session = self.Session()
+        try:
+            # 获取当前日期
+            end_date = datetime.datetime.now()
+            start_date = end_date - datetime.timedelta(days=7)
+
+            # 定义可能的模型和状态
+            models = ['glm-4-flash', 'gpt-3.5-turbo', 'gpt-4']
+            statuses = ['success', 'failed', 'pending']
+
+            # 生成随机数据
+            for _ in range(num_entries):
+                random_date = start_date + datetime.timedelta(
+                    seconds=random.randint(0, int((end_date - start_date).total_seconds()))
+                )
+                random_model = random.choice(models)
+                random_status = random.choice(statuses)
+
+                new_log = ReqLog(
+                    time=random_date,
+                    req_id=str(uuid.uuid4()),
+                    service_provider='test_provider',
+                    token='test_token',
+                    model=random_model,
+                    prompt=random.randint(10, 500),
+                    completion=random.randint(50, 1000),
+                    quota=random.uniform(0.1, 5.0),
+                    uri='/test/api',
+                    request_data='{"test": "data"}',
+                    response_data='{"test": "response"}',
+                    api_status='200',
+                    api_error=None,
+                    status=random_status,
+                    md5=hashlib.md5(str(random.random()).encode()).hexdigest()
+                )
+
+                session.add(new_log)
+
+            session.commit()
+            print(f"成功插入 {num_entries} 条随机测试数据")
+
+        except SQLAlchemyError as e:
+            session.rollback()
+            print(f"插入随机测试数据时出错: {str(e)}")
+        finally:
+            session.close()
+
 
 if __name__ == '__main__':
     logger = RequestLogger()
-    
-    dataList, total = logger.index(keywords="", per_page=10, page=1, order_by="id", order_dir="desc")
-    print(dataList)
-    print(total)
-    for data in dataList:
-        print(data.req_id)
-        print(data.time)
-        print(data.service_provider)
-        print(data.token)
-        print(data.model)
-        print(data.prompt)
-        print(data.completion)
-        print(data.quota)
-        print(data.uri)
-        print(data.request_data)
-        
+    #
+    # dataList, total = logger.index(keywords="", per_page=10, page=1, order_by="id", order_dir="desc")
+    # print(dataList)
+    # print(total)
+    # for data in dataList:
+    #     print(data.req_id)
+    #     print(data.time)
+    #     print(data.service_provider)
+    #     print(data.token)
+    #     print(data.model)
+    #     print(data.prompt)
+    #     print(data.completion)
+    #     print(data.quota)
+    #     print(data.uri)
+    #     print(data.request_data)
+    # data = logger.statistics()
+    # print(data)
+    logger.insert_random_test_data()
+
+    data = logger.statistics_model_day()
+    print(data)

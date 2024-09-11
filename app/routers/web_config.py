@@ -1,10 +1,14 @@
+import time
+
 from app.apiDB import apiDB
 db = apiDB("./api.yaml")
 
 
 from app.routers.JWTHandler import JWTHandler, JWTBearer
 
-jwt_handler = JWTHandler(secret_key="secret_key")
+jwt_secret_key = db.config_server.get("jwt_secret_key",str(time.time()))
+
+jwt_handler = JWTHandler(secret_key=jwt_secret_key)
 jwt_bearer = JWTBearer(jwt_handler)
 
 admin_username = db.config_server.get("username","admin")
