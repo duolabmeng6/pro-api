@@ -1,7 +1,5 @@
 import asyncio
 import json
-import os
-
 from app.log import logger
 from app.provider.chatManager import chatManager
 from app.provider.openai.openaiProvider import openaiProvider

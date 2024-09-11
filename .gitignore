@@ -51,3 +51,5 @@ api.yaml
 .env
 /app/provider/debugdata/
 /app/provider/debugfile/
+debugdata/
+debugfile/

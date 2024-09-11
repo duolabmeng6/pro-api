@@ -1,12 +1,8 @@
 import hashlib
 import json
-import os
-
 from fastapi import HTTPException
 from typing import AsyncGenerator
-
 import httpx
-
 from app.api_data import db
 
 if db.config_server.get("admin_server", False):
