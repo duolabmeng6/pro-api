@@ -1,0 +1,10 @@
+{
+    "type": "page",
+    "title": "模型每日使用统计",
+    "body": [
+      {
+        "type": "chart",
+        "api": "/admin/statistics_model_day"
+      }
+    ]
+  }

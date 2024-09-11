@@ -1,0 +1,28 @@
+{
+    "type": "page",
+    "body": {
+        "type": "service",
+        "api": "/admin/statistics",
+        "body": [
+            {
+                "type": "table",
+                "title": "模型使用统计",
+                "source": "$rows",
+                "columns": [
+                    {
+                        "name": "model",
+                        "label": "模型"
+                    },
+                    {
+                        "name": "prompt",
+                        "label": "提示词数量"
+                    },
+                    {
+                        "name": "completion",
+                        "label": "生成词数量"
+                    }
+                ]
+            }
+        ]
+    }
+}

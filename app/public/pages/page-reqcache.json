@@ -1,0 +1,197 @@
+{
+    "type": "page",
+    "title": "请求缓存管理",
+    "remark": null,
+    "name": "page-reqcache",
+    "body": [
+        {
+            "type": "crud",
+            "syncLocation": false,
+            "api": {
+                "method": "get",
+                "url": "/admin/req_cache"
+            },
+            "columns": [
+                {
+                    "name": "id",
+                    "label": "ID",
+                    "type": "text"
+                },
+                {
+                    "name": "md5",
+                    "label": "MD5哈希",
+                    "type": "text",
+                    "tpl": "${md5|truncate:8}",
+                    "popOver": {
+                        "trigger": "hover",
+                        "body": "${md5}"
+                    }
+                },
+                {
+                    "name": "req",
+                    "label": "请求数据",
+                    "type": "text",
+                    "tpl": "${req|truncate:20}",
+                    "popOver": {
+                        "trigger": "hover",
+                        "body": "${req}"
+                    }
+                },
+                {
+                    "name": "hit_count",
+                    "label": "命中次数",
+                    "type": "number"
+                },
+                {
+                    "name": "updated_at",
+                    "label": "更新时间",
+                    "type": "datetime"
+                },
+                {
+                    "type": "operation",
+                    "label": "操作",
+                    "buttons": [
+                        {
+                            "label": "查看",
+                            "type": "button",
+                            "actionType": "dialog",
+                            "level": "link",
+                            "dialog": {
+                                "title": "查看详情",
+                                "body": {
+                                    "type": "form",
+                                    "initApi": "get:/admin/req_cache/${id}",
+                                    "body": [
+                                        {
+                                            "name": "id",
+                                            "label": "ID",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "md5",
+                                            "label": "MD5哈希",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "req",
+                                            "label": "请求数据",
+                                            "type": "textarea",
+                                            "levelExpand": 1
+                                        },
+                                        {
+                                            "name": "resp",
+                                            "label": "响应数据",
+                                            "type": "textarea",
+                                            "levelExpand": 1
+                                        },
+                                        {
+                                            "name": "hit_count",
+                                            "label": "命中次数",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "created_at",
+                                            "label": "创建时间",
+                                            "type": "static-datetime"
+                                        },
+                                        {
+                                            "name": "updated_at",
+                                            "label": "更新时间",
+                                            "type": "static-datetime"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "type": "button",
+                            "label": "删除",
+                            "actionType": "ajax",
+                            "level": "link",
+                            "className": "text-danger",
+                            "confirmText": "确定要删除？",
+                            "api": "delete:/admin/req_cache/${id}"
+                        }
+                    ]
+                }
+            ],
+            "bulkActions": [
+                {
+                    "type": "button",
+                    "level": "danger",
+                    "label": "批量删除",
+                    "confirmText": "确定要删除？",
+                    "actionType": "ajax",
+                    "api": "delete:/admin/req_cache/bulkDelete/${ids|raw}"
+                }
+            ],
+            "itemActions": [],
+            "features": [
+                "filter",
+                "bulkDelete",
+                "view",
+                "delete"
+            ],
+            "filterColumnCount": 3,
+            "headerToolbar": [
+                "bulkActions",
+                {
+                    "type": "button",
+                    "label": "添加缓存",
+                    "actionType": "dialog",
+                    "level": "primary",
+                    "dialog": {
+                        "title": "添加缓存",
+                        "body": {
+                            "type": "form",
+                            "api": "post:/admin/req_cache",
+                            "body": [
+                                {
+                                    "name": "md5",
+                                    "label": "MD5哈希",
+                                    "type": "input-text",
+                                    "required": true
+                                },
+                                {
+                                    "name": "req",
+                                    "label": "请求数据",
+                                    "type": "textarea",
+                                    "required": true
+                                },
+                                {
+                                    "name": "resp",
+                                    "label": "响应数据",
+                                    "type": "textarea",
+                                    "required": true
+                                }
+                            ]
+                        }
+                    }
+                }
+            ],
+            "id": "u:reqcache_crud",
+            "perPageAvailable": [
+                10,
+                20,
+                50,
+                100
+            ],
+            "messages": {},
+            "filter": {
+                "title": "查询条件",
+                "body": [
+                    {
+                        "type": "input-text",
+                        "name": "keywords",
+                        "label": "关键字"
+                    },
+                    {
+                        "type": "input-date-range",
+                        "name": "created_at_range",
+                        "label": "创建时间范围"
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -1,0 +1,120 @@
+{
+  "type": "page",
+  "title": "登录",
+  "body": [
+    {
+      "type": "flex",
+      "className": "p-1",
+      "items": [
+        {
+          "type": "container",
+          "body": [
+          ],
+          "size": "xs",
+          "style": {
+            "position": "static",
+            "display": "block",
+            "flex": "1 1 auto",
+            "flexGrow": 1,
+            "flexBasis": "auto"
+          },
+          "wrapperBody": false,
+          "isFixedHeight": false,
+          "isFixedWidth": false,
+          "id": "u:04701e51a739"
+        },
+        {
+          "type": "container",
+          "body": [
+            {
+              "type": "form",
+              "title": "登录后台",
+              "body": [
+                {
+                  "type": "input-text",
+                  "label": "用户名",
+                  "name": "username",
+                  "id": "u:735b426ac357"
+                },
+                {
+                  "label": "密码",
+                  "type": "input-password",
+                  "name": "password",
+                  "id": "u:0710161ad3c8",
+                  "showCounter": false,
+                  "validations": {
+                  },
+                  "validationErrors": {
+                  }
+                }
+              ],
+              "id": "u:0c7698e29666",
+              "submitText": "登录",
+              "redirect": "/admin",
+              "api": {
+                "url": "/admin/login",
+                "method": "post",
+                "requestAdaptor": "",
+                "adaptor": "if (payload && payload.data && payload.data.token) {\n  const token = payload.data.token;\n  document.cookie = `token=${token}; path=/`;\n}\nreturn payload;",
+                "messages": {
+                  "success": "登录成功",
+                  "failed": "登录失败，请检查用户名和密码"
+                }
+              }
+            }
+          ],
+          "size": "xs",
+          "style": {
+            "position": "static",
+            "display": "block",
+            "flex": "1 1 auto",
+            "flexGrow": 1,
+            "flexBasis": "auto"
+          },
+          "wrapperBody": false,
+          "isFixedHeight": false,
+          "isFixedWidth": false,
+          "id": "u:349b85cef1f3"
+        },
+        {
+          "type": "container",
+          "body": [
+          ],
+          "size": "xs",
+          "style": {
+            "position": "static",
+            "display": "block",
+            "flex": "1 1 auto",
+            "flexGrow": 1,
+            "flexBasis": "auto"
+          },
+          "wrapperBody": false,
+          "isFixedHeight": false,
+          "isFixedWidth": false,
+          "id": "u:8254d8d5c15c"
+        }
+      ],
+      "style": {
+        "position": "relative",
+        "inset": "auto",
+        "flexWrap": "nowrap",
+        "flexDirection": "row",
+        "justifyContent": "space-between",
+        "alignItems": "center"
+      },
+      "id": "u:a4bde49c8cea",
+      "isFixedHeight": false,
+      "isFixedWidth": false
+    }
+  ],
+  "id": "u:dbade638117b",
+  "asideSticky": true,
+  "asideResizor": false,
+  "pullRefresh": {
+    "disabled": true
+  },
+  "regions": [
+    "body",
+    "header"
+  ]
+}

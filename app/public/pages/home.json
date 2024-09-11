@@ -1,0 +1,94 @@
+{
+  "type": "page",
+  "title": "主页",
+  "body": [
+    {
+      "type": "flex",
+      "className": "p-1",
+      "items": [
+        {
+          "type": "container",
+          "body": [
+            {
+              "type": "card",
+              "header": {
+                "title": "用户数量",
+                "subTitle": "副标题"
+              },
+              "body": [
+                {
+                  "type": "tpl",
+                  "tpl": "9999\n  ",
+                  "wrapperComponent": "",
+                  "inline": false,
+                  "id": "u:c1e5699ac0bf"
+                }
+              ],
+              "actions": [
+              ],
+              "id": "u:7b989c68afb5"
+            }
+          ],
+          "size": "xs",
+          "style": {
+            "position": "static",
+            "display": "block",
+            "flex": "1 1 auto",
+            "flexGrow": 1,
+            "flexBasis": "auto"
+          },
+          "wrapperBody": false,
+          "isFixedHeight": false,
+          "isFixedWidth": false,
+          "id": "u:7c8c59532e5b"
+        },
+        {
+          "type": "container",
+          "body": [
+            {
+              "type": "card",
+              "header": {
+                "title": "日访问量",
+                "subTitle": "副标题"
+              },
+              "body": [
+                {
+                  "type": "tpl",
+                  "tpl": "99999",
+                  "wrapperComponent": "",
+                  "inline": false,
+                  "id": "u:feba80ccf20a"
+                }
+              ],
+              "actions": [
+              ],
+              "id": "u:ca95038144df"
+            }
+          ],
+          "size": "xs",
+          "style": {
+            "position": "static",
+            "display": "block",
+            "flex": "1 1 auto",
+            "flexGrow": 1,
+            "flexBasis": "auto"
+          },
+          "wrapperBody": false,
+          "isFixedHeight": false,
+          "isFixedWidth": false,
+          "id": "u:efe368742e8c"
+        }
+      ],
+      "style": {
+        "position": "relative"
+      },
+      "id": "u:066e585d18ed"
+    }
+  ],
+  "id": "u:fc56761e6464",
+  "toolbar": [
+  ],
+  "regions": [
+    "body"
+  ]
+}

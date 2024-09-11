@@ -1,0 +1,145 @@
+{
+  "type": "page",
+  "title": "页面管理",
+  "body": [
+    {
+      "type": "crud",
+      "api": "GET:/admin/amis-pages",
+      "bulkActions": [],
+      "itemActions": [],
+      "features": [
+        "create"
+      ],
+      "columnsTogglable": "auto",
+      "perPageAvailable": [],
+      "messages": {},
+      "footerToolbar": [],
+      "headerToolbar": [
+        {
+          "label": "新增",
+          "type": "button",
+          "actionType": "dialog",
+          "dialog": {
+            "title": "新增页面配置",
+            "body": [
+              {
+                "type": "form",
+                "api": "POST:/admin/amis-pages",
+                "body": [
+                  {
+                    "label": "页面名称",
+                    "type": "input-text",
+                    "name": "name",
+                    "required": true,
+                    "placeholder": ""
+                  },
+                  {
+                    "type": "editor",
+                    "label": "页面配置",
+                    "name": "config",
+                    "placeholder": "",
+                    "language": "json",
+                    "required": true,
+                    "size": "xxl"
+                  }
+                ],
+                "rules": []
+              }
+            ],
+            "type": "dialog",
+            "closeOnEsc": false,
+            "closeOnOutside": false,
+            "showCloseButton": true,
+            "size": "lg"
+          },
+          "level": "primary"
+        }
+      ],
+      "mode": "table",
+      "columns": [
+        {
+          "type": "tpl",
+          "tpl": "<a target=\"_blank\" href=\"/page/${name}\">${name}</a>",
+          "inline": false,
+          "name": "name",
+          "label": "页面名称",
+          "placeholder": "-",
+          "remark": "点击可直接跳转到目标页面"
+        },
+        {
+          "type": "operation",
+          "label": "操作",
+          "name": "operation",
+          "buttons": [
+            {
+              "type": "button",
+              "label": "修改",
+              "actionType": "dialog",
+              "dialog": {
+                "title": "修改页面配置",
+                "body": [
+                  {
+                    "type": "form",
+                    "api": "POST:/admin/amis-pages",
+                    "body": [
+                      {
+                        "type": "input-text",
+                        "label": "页面名称",
+                        "name": "name",
+                        "readOnly": true,
+                        "required": true,
+                        "placeholder": "",
+                        "description": "无法修改页面名称"
+                      },
+                      {
+                        "label": "页面配置",
+                        "type": "editor",
+                        "name": "config",
+                        "required": true,
+                        "placeholder": "",
+                        "language": "json",
+                        "size": "xxl"
+                      }
+                    ],
+                    "rules": [],
+                    "initApi": ""
+                  }
+                ],
+                "type": "dialog",
+                "closeOnEsc": false,
+                "closeOnOutside": false,
+                "showCloseButton": true,
+                "size": "lg",
+                "data": {
+                  "&": "$$",
+                  "unique": "${unique}",
+                  "id": "${id}",
+                  "desc": "${desc}"
+                }
+              },
+              "level": "link",
+              "disabledOn": "this.disableUpdate === 1"
+            },
+            {
+              "type": "button",
+              "label": "删除",
+              "actionType": "ajax",
+              "level": "link",
+              "className": "text-danger",
+              "confirmText": "确定要删除 ${name} 吗？",
+              "api": "delete:/admin/amis-pages/${name}",
+              "disabledOn": "this.disableDelete === 1"
+            }
+          ]
+        }
+      ],
+      "showFooter": false,
+      "initFetch": true
+    }
+  ],
+  "regions": [
+    "body"
+  ],
+  "messages": {},
+  "className": "r b-a b-2x"
+}

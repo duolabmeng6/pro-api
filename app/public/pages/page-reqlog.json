@@ -1,0 +1,276 @@
+{
+    "type": "page",
+    "title": "请求日志管理",
+    "remark": null,
+    "name": "page-reqlog",
+    "body": [
+        {
+            "type": "crud",
+            "syncLocation": false,
+            "api": {
+                "method": "get",
+                "url": "/admin/req_logs"
+            },
+            "columns": [
+                {
+                    "name": "id",
+                    "label": "ID",
+                    "type": "text"
+                },
+                {
+                    "name": "time",
+                    "label": "请求时间",
+                    "type": "datetime"
+                },
+                {
+                    "name": "req_id",
+                    "label": "请求ID",
+                    "type": "text",
+                    "tpl": "${req_id|truncate:6}",
+                    "popOver": "${req_id}"
+                },
+                {
+                    "name": "service_provider",
+                    "label": "服务提供商",
+                    "type": "text"
+                },
+                {
+                    "name": "token",
+                    "label": "用户令牌",
+                    "type": "text",
+                    "tpl": "${token|truncate:6}",
+                    "popOver": "${token}"
+                },
+                {
+                    "name": "model",
+                    "label": "使用的模型",
+                    "type": "text"
+                },
+                {
+                    "name": "prompt",
+                    "label": "提示词token数"
+                },
+                {
+                    "name": "completion",
+                    "label": "完成的内容token数"
+                },
+                {
+                    "name": "quota",
+                    "label": "消耗的配额"
+                },
+                {
+                    "name": "uri",
+                    "label": "请求URI",
+                    "type": "text",
+                    "tpl": "${uri|truncate:6}",
+                    "popOver": "${uri}"
+                },
+                {
+                    "name": "status",
+                    "label": "请求状态",
+                    "type": "text"
+                },
+                {
+                    "type": "operation",
+                    "label": "操作",
+                    "buttons": [
+                        {
+                            "label": "查看",
+                            "type": "button",
+                            "actionType": "dialog",
+                            "level": "link",
+                            "dialog": {
+                                "title": "查看详情",
+                                "body": {
+                                    "type": "form",
+                                    "initApi": "get:/admin/req_logs/${id}",
+                                    "body": [
+                                        {
+                                            "name": "id",
+                                            "label": "ID",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "time",
+                                            "label": "请求时间",
+                                            "type": "static-datetime"
+                                        },
+                                        {
+                                            "name": "req_id",
+                                            "label": "请求ID",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "service_provider",
+                                            "label": "服务提供商",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "token",
+                                            "label": "用户令牌",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "model",
+                                            "label": "使用的模型",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "prompt",
+                                            "label": "提示词token数",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "completion",
+                                            "label": "完成的内容token数",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "quota",
+                                            "label": "消耗的配额",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "uri",
+                                            "label": "请求URI",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "request_data",
+                                            "label": "请求数据",
+                                            "type": "json",
+                                            "levelExpand": 1
+                                        },
+                                        {
+                                            "name": "response_data",
+                                            "label": "响应数据",
+                                            "type": "json",
+                                            "levelExpand": 1
+                                        },
+                                        {
+                                            "name": "api_status",
+                                            "label": "API状态码",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "api_error",
+                                            "label": "API错误信息",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "status",
+                                            "label": "请求状态",
+                                            "type": "static"
+                                        },
+                                        {
+                                            "name": "created_at",
+                                            "label": "创建时间",
+                                            "type": "static-datetime"
+                                        },
+                                        {
+                                            "name": "updated_at",
+                                            "label": "更新时间",
+                                            "type": "static-datetime"
+                                        },
+                                        {
+                                            "name": "md5",
+                                            "label": "MD5哈希",
+                                            "type": "static"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "type": "button",
+                            "label": "删除",
+                            "actionType": "ajax",
+                            "level": "link",
+                            "className": "text-danger",
+                            "confirmText": "确定要删除？",
+                            "api": "delete:/admin/req_logs/${id}"
+                        }
+                    ]
+                }
+            ],
+            "bulkActions": [
+                {
+                    "type": "button",
+                    "level": "danger",
+                    "label": "批量删除",
+                    "confirmText": "确定要删除？",
+                    "actionType": "ajax",
+                    "api": "delete:/admin/req_logs/bulkDelete/${ids|raw}"
+                }
+            ],
+            "itemActions": [],
+            "features": [
+                "filter",
+                "bulkDelete",
+                "view",
+                "delete"
+            ],
+            "filterColumnCount": 3,
+            "headerToolbar": [
+                "bulkActions"
+            ],
+            "id": "u:reqlog_crud",
+            "perPageAvailable": [
+                10,
+                20,
+                50,
+                100
+            ],
+            "messages": {},
+            "filter": {
+                "title": "查询条件",
+                "body": [
+                    {
+                        "type": "input-text",
+                        "name": "keywords",
+                        "label": "关键字"
+                    },
+                    {
+                        "type": "input-date-range",
+                        "name": "time_range",
+                        "label": "请求时间范围"
+                    },
+                    {
+                        "type": "select",
+                        "name": "service_provider",
+                        "label": "服务提供商",
+                        "options": [
+                            {
+                                "label": "提供商A",
+                                "value": "A"
+                            },
+                            {
+                                "label": "提供商B",
+                                "value": "B"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "select",
+                        "name": "status",
+                        "label": "请求状态",
+                        "options": [
+                            {
+                                "label": "待处理",
+                                "value": "pending"
+                            },
+                            {
+                                "label": "成功",
+                                "value": "success"
+                            },
+                            {
+                                "label": "失败",
+                                "value": "failed"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

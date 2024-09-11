@@ -1,0 +1,80 @@
+{
+  "status": 0,
+  "msg": "",
+  "data": {
+    "pages": [
+      {
+        "label": "Home",
+        "url": "/",
+        "redirect": "/pages/amis-pages"
+      },
+      {
+        "children": [
+          {
+            "label": "主页",
+            "url": "/pages/home",
+            "schemaApi": "get:/pages/home.json"
+          }
+        ]
+      },
+      {
+        "children": [
+          {
+            "label": "请求日志",
+            "url": "/pages/reqlog",
+            "icon": "fa fa-cube",
+            "schemaApi": "get:/pages/page-reqlog.json"
+          }
+        ]
+      },
+      {
+        "children": [
+          {
+            "label": "请求缓存管理",
+            "url": "/pages/req_cache",
+            "icon": "fa fa-cube",
+            "schemaApi": "get:/pages/page-reqcache.json"
+          }
+        ]
+      },
+      {
+        "children": [
+          {
+            "label": "统计",
+            "url": "/pages/statistics",
+            "icon": "fa fa-cube",
+            "schemaApi": "get:/pages/page-statistics.json"
+          }
+        ]
+      },
+      {
+        "children": [
+          {
+            "label": "统计近7天",
+            "url": "/pages/statistics_model_day",
+            "icon": "fa fa-cube",
+            "schemaApi": "get:/pages/page-statistics_model_day.json"
+          }
+        ]
+      },
+      {
+        "children": [
+          {
+            "label": "系统",
+            "url": "/system",
+            "rewrite": "/pages/amis-pages",
+            "icon": "fa fa-cube",
+            "children": [
+              {
+                "label": "amis 页面管理",
+                "url": "/pages/amis-pages",
+                "icon": "fa fa-list",
+                "schemaApi": "get:/pages/amis-pages.json"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
