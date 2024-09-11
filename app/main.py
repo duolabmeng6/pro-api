@@ -217,6 +217,15 @@ async def chat_completions(
         return StreamingResponse(generate_stream(), media_type="text/event-stream")
 
 
+@app.get("/v1/models")
+async def chat_completions(
+        api_key: str = Depends(verify_api_key),
+        req: Request = Request
+):
+    return {
+        "data": db.get_all_models(api_key)
+    }
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

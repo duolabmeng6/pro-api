@@ -1,5 +1,7 @@
 import asyncio
 import json
+import time
+
 import yaml
 from typing import List, Dict, Tuple
 
@@ -116,6 +118,31 @@ class apiDB:
                     break
 
         return filtered_usability_model, "成功"
+    def get_all_models(self, api_key):
+        # 返回openai的models格式
+        if api_key not in self.tokens:
+            return []
+        
+        user_models = self.tokensKV[api_key].get('model', [])
+        all_models = []
+        
+        if "all" in user_models:
+            all_models = list(self.providersKV.keys())
+        else:
+            for model in user_models:
+                if model.endswith('*'):
+                    all_models.extend([m for m in self.providersKV.keys() if m.startswith(model[:-1])])
+                elif model in self.providersKV:
+                    all_models.append(model)
+        
+        return [
+            {
+                "id": model,
+                "object": "model",
+                "owned_by": "pro-api",
+            }
+            for model in set(all_models)
+        ]
 
 
 def is_model_allowed(user_model: str, model_name: str) -> bool:
