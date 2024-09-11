@@ -15,6 +15,7 @@ on:
       - requirements.txt
       - docker-compose.yml
       - .github/workflows/main.yml
+  workflow_dispatch:
 
 jobs:
   build-and-push:
