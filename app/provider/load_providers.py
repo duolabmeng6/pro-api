@@ -2,8 +2,7 @@ import asyncio
 import json
 import os
 
-from api_data import db
-
+from app.log import logger
 from app.provider.chatManager import chatManager
 from app.provider.openai.openaiProvider import openaiProvider
 from app.provider.gemini.geminiProvider import geminiProvider
@@ -46,10 +45,10 @@ def load_providers(db):
             )
 
         if not chat:
-            print(f"未知的提供商类型: {provider}")
+            logger.info(f"未知的提供商类型: {provider}")
             continue
         # 生成唯一的名称
-        print(f"添加提供商: {name}")
+        logger.info(f"添加提供商: {name}")
         # 将聊天实例添加到 ai_manager
         ai_manager.set_chat(name, chat)
         save_chat[name] = True
@@ -58,7 +57,7 @@ def load_providers(db):
 
 if __name__ == "__main__":
     async def init():
-        from api_data import db
+        from app.api_data import db
         ai_manager = load_providers(db)
         request = """
     {
@@ -76,6 +75,6 @@ if __name__ == "__main__":
         request = json.loads(request)
         data = ai_manager.chat("openai_智谱清言").chat2api(request, "glm-4-flash", "test")
         async for response in data:
-           print(response)
+           logger.info(response)
 
     asyncio.run(init())

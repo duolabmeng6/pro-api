@@ -1,9 +1,5 @@
-
-
 from app.provider.chatInterface import chatInterface
 import copy
-
-
 
 class chatManager:
     def __init__(self, default_chat: str =""):

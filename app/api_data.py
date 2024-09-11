@@ -7,6 +7,7 @@ import httpx
 # 全局变量用于存储配置和数据库实例
 _config_context = None
 _db_instance = None
+
 config_url = os.environ.get('config_url')
 secret_key = os.environ.get('secret_key',"")
 
@@ -48,9 +49,11 @@ def get_db():
             _db_instance = apiDB.apiDB(_config_context)
         else:
             api_file_path = os.path.join(os.path.dirname(__file__), './api.yaml')
-            print("加载配置文件", _config_context)
+            print("加载本地配置文件")
             _config_context = pyefun.读入文本(api_file_path)
             _db_instance = apiDB.apiDB(_config_context)
+        
+        print(f"配置文件加载状态: {'成功' if _config_context else '失败'}")
 
     return _db_instance
 

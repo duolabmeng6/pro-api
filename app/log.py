@@ -1,8 +1,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
 import os
-from api_data import db
-
+from app.api_data import db
 
 save_log_file = db.config_server.get("save_log_file")
 

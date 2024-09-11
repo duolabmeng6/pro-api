@@ -1,15 +1,10 @@
 import sys
 import os
 
-from pydantic import BaseModel
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from api_data import db, get_db
+from pydantic import BaseModel
 import ujson as json
-from types import SimpleNamespace
 from fastapi.routing import APIRoute
-from app.log import logger
-from app.provider.load_providers import load_providers
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, Request, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -17,34 +12,36 @@ from fastapi.responses import StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 from fastapi.middleware.gzip import GZipMiddleware
-
+from fastapi.staticfiles import StaticFiles
 from app.error_info import generate_error_response
-
 import uuid
 import pyefun
+from app.log import logger
+
+
+from app.api_data import db, get_db
+from app.provider.load_providers import load_providers
 
 ai_manager = load_providers(db)
 
-if db.config_server.get("admin_server", False):
-    from app.db.logDB import RequestLogger
-    request_logger = RequestLogger()
-
-
-def print_routes():
-    print("FastAPI 定义的路由:")
-    for route in app.routes:
-        if isinstance(route, APIRoute):
-            print(f"路径: {route.path}, 方法: {route.methods}, 名称: {route.name}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    def print_routes():
+        logger.info("FastAPI 定义的路由:")
+        for route in app.routes:
+            if isinstance(route, APIRoute):
+                logger.info(f"路径: {route.path}, 方法: {route.methods}, 名称: {route.name}")
+
     logger.info("服务器启动")
     print_routes()
     yield
 
-
 app = FastAPI(lifespan=lifespan)
+
+
+
 
 
 @app.exception_handler(HTTPException)
@@ -225,16 +222,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from fastapi.staticfiles import StaticFiles
-
-# 设置./web为静态目录
-if db.config_server.get("admin_server", False):
-    from app.routers.router import api_router
-
-    app.include_router(api_router, prefix="")
-    app.add_middleware(GZipMiddleware, minimum_size=100 * 1024)
-    app.mount("/", StaticFiles(directory="./public", html=True), name="static")
-
 
 @app.get("/reload_config")
 def reload_config():
@@ -244,14 +231,21 @@ def reload_config():
     return "已经执行刷新配置"
 
 
-if __name__ == "__main__":
-    print_routes()
+if db.config_server.get("admin_server", False):
+    from app.db.logDB import RequestLogger
+    request_logger = RequestLogger()
+    from app.routers.router import api_router
+    app.include_router(api_router, prefix="")
+    app.mount("/", StaticFiles(directory="./public", html=True), name="static")
+    app.add_middleware(GZipMiddleware, minimum_size=100 * 1024)
 
+if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(
         "__main__:app",
-        host=db.config_server.get("host", "127.0.0.1"),
-        port=db.config_server.get("port", 8000),
-        reload=True
+        host="0.0.0.0",
+        port=8000,
+        # reload=True,
+        # workers=1,
     )
