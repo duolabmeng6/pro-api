@@ -107,7 +107,7 @@ server:
     default_model: glm-4-flash # 如果匹配不到，则使用这个默认的模型
     debug: false
     cache: false
-    db_cache: true # 相同内容的情况下返回上一次成功的回复
+    db_cache: false # 相同内容的情况下返回上一次成功的回复
     save_log_file: false
     db_path: sqlite:///./data/request_log.db
     username: admin # 后台用户名
