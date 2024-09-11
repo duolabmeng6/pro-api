@@ -1,14 +1,7 @@
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import json
-import ujson
-def monkey_patch_json():
-    json.__name__ = 'ujson'
-    json.dumps = ujson.dumps
-    json.loads = ujson.loads
-monkey_patch_json()
-
+import ujson as json
 
 from types import SimpleNamespace
 
@@ -78,7 +71,14 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 security = HTTPBearer()
-
+@app.get("/")
+async def index():
+    return {
+        "name":"pro-api",
+        "version":"1.0.0",
+        "author":"duolabmeng6",
+        "url":"https://github.com/duolabmeng6/pro-api",
+    }
 
 def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
     api_key = credentials.credentials

@@ -84,6 +84,7 @@ async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:
         return
 
     cacheData = ""
+    DONE = False
     if sendReady["stream"]:
         async with client.stream("POST", sendReady["url"], headers=sendReady["headers"],
                                  json=sendReady["body"]) as response:
@@ -97,17 +98,21 @@ async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:
                     if line.startswith('data:'):  # 只处理 SSE 数据行
                         cacheData = cacheData + line + "\r\n"
                         if line == "data: [DONE]":
-                            yield line
+                            DONE = True
+                        yield line
 
-            cacheManager.add_to_cache(cache_md5, json_dumps(sendReady["body"]), cacheData)
-            yield "[DONE]"
+            print(f"db Cache 保存{cache_md5}:：{cacheData}")
+            cacheManager.add_to_cache(cache_md5, json.dumps(sendReady["body"]), cacheData)
+            if not DONE:
+                yield "data: [DONE]"
+
     else:
         # 非流式请求
         response = await client.post(sendReady["url"], headers=sendReady["headers"], json=sendReady["body"])
         await raise_for_status(sendReady, response)
         response_text = response.content.decode("utf-8")
         cacheData = response_text
-        cacheManager.add_to_cache(cache_md5, json_dumps(sendReady["body"]), cacheData)
+        cacheManager.add_to_cache(cache_md5, json.dumps(sendReady["body"]), cacheData)
         yield response_text
 
 
