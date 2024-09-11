@@ -13,10 +13,9 @@ class claudeSSEHandler:
         self.model = model
         self.tool_calls = []  # 新增: 用于存储完整的工具调用信息
 
-
     def generate_response(self):
         chunk = {
-            "id": self.custom_id,
+            "id": "chatcmpl-" + self.custom_id,
             "object": "chat.completion",
             "created": int(time.time()),
             "model": self.model,
@@ -186,10 +185,6 @@ class claudeSSEHandler:
         try:
             json_data = json.loads(line)
 
-            # 设置基本信息
-            self.custom_id = json_data.get('id')
-            self.model = json_data.get('model')
-
             # 处理content
             content = json_data.get('content', [])
             for part in content:
@@ -250,7 +245,6 @@ if __name__ == "__main__":
                     if sse:
                         pass
                     # print(handler.generate_response())
-
 
                 print("文件统计信息：", json.dumps(handler.get_stats(), ensure_ascii=False, indent=4))
                 print("-------------------")

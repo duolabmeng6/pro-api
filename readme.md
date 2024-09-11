@@ -115,6 +115,10 @@ server:
     jwt_secret_key: admin # 随便填不填就随机
 ```
 
+[vertexai的参数获取教程](./docs/vertexai的参数获取教程.md)
+
+
+
 ## Docker 本地部署
 
 启动容器

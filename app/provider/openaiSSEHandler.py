@@ -16,7 +16,7 @@ class openaiSSEHandler:
 
     def generate_response(self):
         chunk = {
-            "id": self.custom_id,
+            "id": "chatcmpl-"+self.custom_id,
             "object": "chat.completion",
             "created": int(time.time()),
             "model": self.model,

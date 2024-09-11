@@ -135,6 +135,7 @@ async def chat_completions(
     id = str(uuid.uuid4())
     request.id = headers.get("id", id)
     logger.name = f"main.{request.id}"
+    request.stream = headers.get("stream", False)
 
     logger.info(
         f"服务提供者:{provider['provider']}, 请求模型:{request.model}, 当前模型:{provider.get('mapped_model')}, 名称:{provider.get('name')}")
