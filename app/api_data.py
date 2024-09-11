@@ -3,20 +3,18 @@ import pyefun
 import os
 import httpx
 
-
 # 全局变量用于存储配置和数据库实例
 _config_context = None
 _db_instance = None
 
 config_url = os.environ.get('config_url')
-secret_key = os.environ.get('secret_key',"")
-
-
+secret_key = os.environ.get('secret_key', "")
 
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 import base64
+
 
 def decrypt_aes_ecb(encrypted_text, key):
     # 将密钥转换为bytes并填充到16字节
@@ -52,7 +50,7 @@ def get_db():
             print("加载本地配置文件")
             _config_context = pyefun.读入文本(api_file_path)
             _db_instance = apiDB.apiDB(_config_context)
-        
+
         print(f"配置文件加载状态: {'成功' if _config_context else '失败'}")
 
     return _db_instance
@@ -73,6 +71,7 @@ def reload_db():
         print(f"配置文件加载状态: {'成功' if _config_context else '失败'}")
     return _db_instance
 
+
 def get_down_url_config():
     if config_url:
         try:
@@ -82,7 +81,7 @@ def get_down_url_config():
             content = response.content
             if secret_key:
                 content = decrypt_aes_ecb(content, secret_key)
-            return  content
+            return content
         except httpx.HTTPError as e:
             print(f"下载配置文件时发生错误: {e}")
             return False
@@ -90,13 +89,15 @@ def get_down_url_config():
     else:
         print("未检测到 config_url 环境变量，跳过配置文件下载")
         return False
+
+
 # 导出 db 实例
 db = get_db()
 
 # 使用示例
 if __name__ == "__main__":
     secret_key = "666666"  # 在实际应用中，请使用更安全的方式存储和管理密钥
-    encrypted ="xjWq4K5Bl4J5nOkPd6a5uA=="
+    encrypted = "xjWq4K5Bl4J5nOkPd6a5uA=="
     decrypted = decrypt_aes_ecb(encrypted, secret_key)
     print(f"解密后: {decrypted}")
 
