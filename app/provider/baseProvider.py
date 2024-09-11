@@ -12,7 +12,7 @@ class baseProvider:
     def __init__(self):
         self._debug = False
         self._cache = False
-        self._dbcache = False
+        self._db_cache = False
         self.setDebugSave("openai")
         self.DataHeadler = None
 
@@ -46,7 +46,8 @@ class baseProvider:
 
                 except FileNotFoundError:
                     error = False
-                    logger.warning(f"Debug file {self.debug_file} not found, it will be created in write mode.")
+                    logger.info(f"缓存不存在{self.debug_file}")
+
             if error:
                 yield "停止"
                 return
@@ -63,7 +64,7 @@ class baseProvider:
                 yield i
 
         # 看这里 ==========
-        if self._dbcache:
+        if self._db_cache:
             datas = get_api_data_cache(pushdata)
         else:
             datas = get_api_data(pushdata)

@@ -53,3 +53,5 @@ api.yaml
 /app/provider/debugfile/
 debugdata/
 debugfile/
+/app/provider/sendbody
+/app/provider/debugdata

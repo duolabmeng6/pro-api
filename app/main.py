@@ -2,6 +2,7 @@ import sys
 import os
 import time
 
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pydantic import BaseModel
 import ujson as json
@@ -187,8 +188,10 @@ async def chat_completions(
         async def generate_stream():
             async for chunk in genData:
                 if debug:
+                    await asyncio.sleep(0.1)
                     logger.info(f"发送到客户端\r\n{chunk}")
-                yield chunk + "\r\n\r\n"
+
+
 
             stats_data = ai_chat.DataHeadler.get_stats()
             logger.info(f"数据迭代完成，统计信息：{stats_data}")
@@ -234,13 +237,13 @@ def reload_config():
     return f"已经执行刷新配置{time.time()}"
 
 
+
+
 if db.config_server.get("admin_server", False):
     from app.db.logDB import RequestLogger
     request_logger = RequestLogger()
     from app.routers.router import api_router
     app.include_router(api_router, prefix="")
-    app.mount("/", StaticFiles(directory="./public", html=True), name="static")
-    app.add_middleware(GZipMiddleware, minimum_size=100 * 1024)
 
 if __name__ == "__main__":
     import uvicorn
@@ -250,5 +253,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=True,
-        # workers=1,
+        workers=1,
     )
