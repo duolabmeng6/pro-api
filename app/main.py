@@ -1,21 +1,18 @@
 import sys
 import os
+
+from pydantic import BaseModel
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from api_data import db
+db = db
 import ujson as json
-
 from types import SimpleNamespace
-
 from fastapi.routing import APIRoute
-
 from app.log import logger
-from app.db.logDB import RequestLogger
 from app.provider.load_providers import load_providers
-from app.routers.router import api_router
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, Depends, HTTPException, Request, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
@@ -23,32 +20,15 @@ from starlette.responses import JSONResponse
 from fastapi.middleware.gzip import GZipMiddleware
 
 from app.error_info import generate_error_response
-from apiDB import apiDB
+
 import uuid
 import pyefun
 
-def down_config():
-    import os
-    import httpx
 
-    config_url = os.environ.get('CONFIG_URL')
-    if config_url:
-        try:
-            response = httpx.get(config_url)
-            response.raise_for_status()
-            with open('./api.yaml', 'wb') as f:
-                f.write(response.content)
-            print("配置文件已成功下载到 ./api.yaml")
-        except httpx.HTTPError as e:
-            print(f"下载配置文件时发生错误: {e}")
-    else:
-        print("未检测到 CONFIG_URL 环境变量，跳过配置文件下载")
-
-down_config()
-
-db = apiDB(os.path.join(os.path.dirname(__file__), './api.yaml'))
 ai_manager = load_providers(db)
-request_logger = RequestLogger()
+if db.config_server.get("admin_server", False):
+    from app.db.logDB import RequestLogger
+    request_logger = RequestLogger()
 
 def print_routes():
     print("FastAPI 定义的路由:")
@@ -64,7 +44,6 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
-app.add_middleware(GZipMiddleware, minimum_size=100*1024)
 
 
 @app.exception_handler(HTTPException)
@@ -115,18 +94,22 @@ def getProvider(providerConfig):
         raise HTTPException(status_code=500, detail="没有适配器")
     return chat
 
+class ChatCompletionRequest(BaseModel):
+    stream: bool = False
+    model: str
+    id: str = None
 
 @app.post("/v1/chat/completions")
 async def chat_completions(
         api_key: str = Depends(verify_api_key),
-        req: Request = Request
+        req: Request = Request,
+        request: ChatCompletionRequest = Body(...),
 ):
     try:
         body = json.loads(await req.body())
     except:
         raise HTTPException(status_code=500, detail="body解析失败")
 
-    request = SimpleNamespace(**body)
     providers, error = db.get_user_provider(api_key, request.model)
     if not providers:
         raise HTTPException(status_code=500, detail=error)
@@ -135,7 +118,6 @@ async def chat_completions(
     id = str(uuid.uuid4())
     request.id = headers.get("id", id)
     logger.name = f"main.{request.id}"
-    request.stream = headers.get("stream", False)
 
     logger.info(
         f"服务提供者:{provider['provider']}, 请求模型:{request.model}, 当前模型:{provider.get('mapped_model')}, 名称:{provider.get('name')}")
@@ -158,18 +140,20 @@ async def chat_completions(
 
     # 先插入日志记录
     service_provider = f"{provider.get('provider', '')}_{provider.get('name', '')}"
-    request_logger.insert_req_log(
-        req_id=id,
-        service_provider=service_provider,
-        token=api_key,
-        model=request.model,
-        prompt=0,
-        completion=0,
-        quota=0,
-        uri=req.url.path,
-        request_data=json.dumps(body),
-        response_data=""
-    )
+
+    if db.config_server.get("admin_server", False):
+        request_logger.insert_req_log(
+            req_id=id,
+            service_provider=service_provider,
+            token=api_key,
+            model=request.model,
+            prompt=0,
+            completion=0,
+            quota=0,
+            uri=req.url.path,
+            request_data=json.dumps(body),
+            response_data=""
+        )
 
     genData = ai_chat.chat2api(body, request_model_name, id)
     first_chunk = await genData.__anext__()
@@ -181,16 +165,16 @@ async def chat_completions(
         stats_data = ai_chat.DataHeadler.get_stats()
         logger.info(f"SSE 数据迭代完成，统计信息：{stats_data}")
 
-        # 更新日志记录
-        request_logger.update_req_log(
-            req_id=id,
-            prompt=stats_data["prompt_tokens"],
-            completion=stats_data["completion_tokens"],
-            quota=0,  # 假设每1000个token花费0.002美元
-            response_data=json.dumps(stats_data),
-            api_status="200",
-            api_error=""
-        )
+        if db.config_server.get("admin_server", False):
+            request_logger.update_req_log(
+                req_id=id,
+                prompt=stats_data["prompt_tokens"],
+                completion=stats_data["completion_tokens"],
+                quota=0,  # 假设每1000个token花费0.002美元
+                response_data=json.dumps(stats_data),
+                api_status="200",
+                api_error=""
+            )
         return first_chunk
 
     if first_chunk:
@@ -201,24 +185,24 @@ async def chat_completions(
                 yield chunk + "\r\n\r\n"
 
             stats_data = ai_chat.DataHeadler.get_stats()
-            logger.info(f"SSE 数据迭代完成，统计信息：{stats_data}")
+            logger.info(f"数据迭代完成，统计信息：{stats_data}")
 
-            # 更新日志记录
-            request_logger.update_req_log(
-                req_id=id,
-                prompt=stats_data["prompt_tokens"],
-                completion=stats_data["completion_tokens"],
-                quota=0,  # 假设每1000个token花费0.002美元
-                response_data=json.dumps(stats_data),
-                api_status="200",
-                api_error=""
-            )
+            if db.config_server.get("admin_server", False):
+                request_logger.update_req_log(
+                    req_id=id,
+                    prompt=stats_data["prompt_tokens"],
+                    completion=stats_data["completion_tokens"],
+                    quota=0,  # 假设每1000个token花费0.002美元
+                    response_data=json.dumps(stats_data),
+                    api_status="200",
+                    api_error=""
+                )
 
         return StreamingResponse(generate_stream(), media_type="text/event-stream")
 
 
 @app.get("/v1/models")
-async def chat_completions(
+async def models(
         api_key: str = Depends(verify_api_key),
         req: Request = Request
 ):
@@ -235,12 +219,13 @@ app.add_middleware(
 )
 
 
-app.include_router(api_router, prefix="")
-
 from fastapi.staticfiles import StaticFiles
-
 # 设置./web为静态目录
-app.mount("/", StaticFiles(directory="./public", html=True), name="static")
+if db.config_server.get("admin_server", False):
+    from app.routers.router import api_router
+    app.include_router(api_router, prefix="")
+    app.add_middleware(GZipMiddleware, minimum_size=100*1024)
+    app.mount("/", StaticFiles(directory="./public", html=True), name="static")
 
 
 

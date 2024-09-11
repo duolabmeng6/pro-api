@@ -7,14 +7,8 @@ import datetime
 import uuid
 import hashlib
 from dataclasses import dataclass
-from app.apiDB import apiDB
 
-db = apiDB(os.path.join(os.path.dirname(__file__), '../api.yaml'))
-# 定义全局变量
-DB_PATH = db.config_server.get("db_path", "")
-if DB_PATH == "":
-    print("没有配置数据库")
-    exit()
+from app.db.comm import db, DB_PATH
 
 Base = declarative_base()
 

@@ -30,7 +30,7 @@ class geminiProvider(baseProvider):
 
 if __name__ == "__main__":
     async def main():
-        from app.apiDB import apiDB
+        from api_data import db
         db = apiDB("../../api.yaml")
         providers, error = db.get_user_provider("sk-111111", "gemini-1.5-flash")
         provider = providers[0]

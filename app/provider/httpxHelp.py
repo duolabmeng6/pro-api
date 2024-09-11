@@ -1,12 +1,17 @@
 import hashlib
 import json
+import os
 
 from fastapi import HTTPException
 from typing import AsyncGenerator
 
 import httpx
 
-from app.db.logDB import CacheManager
+from app.api_data import db
+
+if db.config_server.get("admin_server", False):
+    from app.db.logDB import CacheManager
+    cacheManager = CacheManager()
 
 
 async def raise_for_status(sendReady, response: httpx.Response):
@@ -68,7 +73,6 @@ async def get_api_data(sendReady) -> AsyncGenerator[str, None]:
         yield response_text
 
 
-cacheManager = CacheManager()
 
 
 async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:

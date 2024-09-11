@@ -46,7 +46,7 @@ class vertexaiClaudeProvider(baseProvider):
 
 if __name__ == "__main__":
     async def main():
-        from app.apiDB import apiDB
+        from api_data import db
         db = apiDB("../../api.yaml")
         providers, error = db.get_user_provider("sk-111111", "claude-3-5-sonnet@20240620")
         provider = providers[0]

@@ -1,17 +1,15 @@
 import asyncio
 import json
+import os
 import time
-
 import yaml
 from typing import List, Dict, Tuple
 
 from fastapi.logger import logger
 
 
-# 配置日
-
 class apiDB:
-    def __init__(self, file_path: str):
+    def __init__(self, content: str):
         # 初始化数据结构
         self.tokens: List[str] = []  # 存储API密钥
         self.tokensKV: Dict[str, Dict] = {}  # 存储每个API密钥对应的详细信息
@@ -21,14 +19,13 @@ class apiDB:
         self.config_server: Dict = {}  # 服务器配置
 
         try:
-            with open(file_path, 'r') as f:
-                conf = yaml.safe_load(f)
-                if conf:
-                    self.update_config(conf)
-                else:
-                    logger.error("配置文件 'api.yaml' 为空。请检查文件内容。")
+            conf = yaml.safe_load(content)
+            if conf:
+                self.update_config(conf)
+            else:
+                logger.error("配置文件 'api.yaml' 为空。请检查文件内容。")
         except FileNotFoundError:
-            logger.error(f"配置文件 'api.yaml' 未找到。请确保文件存在于正确的位置。{file_path}")
+            logger.error(f"配置文件 'api.yaml' 未找到。请确保文件存在于正确的位置。")
         except yaml.YAMLError:
             logger.error("配置文件 'api.yaml' 格式不正确。请检查 YAML 格式。")
 
@@ -60,7 +57,6 @@ class apiDB:
                     if key not in ["name", "provider", "model", "base_url", "api_key"]:
                         item[key] = value
                 providers.append(item)
-
 
         self.providers = providers
         self.providersKV = {}
@@ -118,14 +114,15 @@ class apiDB:
                     break
 
         return filtered_usability_model, "成功"
+
     def get_all_models(self, api_key):
         # 返回openai的models格式
         if api_key not in self.tokens:
             return []
-        
+
         user_models = self.tokensKV[api_key].get('model', [])
         all_models = []
-        
+
         if "all" in user_models:
             all_models = list(self.providersKV.keys())
         else:
@@ -134,7 +131,7 @@ class apiDB:
                     all_models.extend([m for m in self.providersKV.keys() if m.startswith(model[:-1])])
                 elif model in self.providersKV:
                     all_models.append(model)
-        
+
         return [
             {
                 "id": model,
@@ -163,17 +160,18 @@ if __name__ == "__main__":
 
         provider, err = db.get_user_provider("sk-111111", "THUDM/chatglm3-6b")
         print("配置:", err, json.dumps(provider, indent=4))
-#
-#         provider, err = db.get_user_provider("sk-111111", "glm-4-flash")
-#         print("配置:", err, json.dumps(provider, indent=4))
-#         provider, err = db.get_user_provider("sk-111111", "gpt-4o")
-#         print("配置:", err, json.dumps(provider, indent=4))
-#         provider, err = db.get_user_provider("sk-333333", "gpt-4o")
-#         print("配置:", err, json.dumps(provider, indent=4))
-#
-#         provider, err = db.get_user_provider("sk-222222", "gpt-4o")
-#         print("配置:", err, json.dumps(provider, indent=4))
-# #
+        #
+        #         provider, err = db.get_user_provider("sk-111111", "glm-4-flash")
+        #         print("配置:", err, json.dumps(provider, indent=4))
+        #         provider, err = db.get_user_provider("sk-111111", "gpt-4o")
+        #         print("配置:", err, json.dumps(provider, indent=4))
+        #         provider, err = db.get_user_provider("sk-333333", "gpt-4o")
+        #         print("配置:", err, json.dumps(provider, indent=4))
+        #
+        #         provider, err = db.get_user_provider("sk-222222", "gpt-4o")
+        #         print("配置:", err, json.dumps(provider, indent=4))
+        # #
         yield
+
 
     asyncio.run(init())

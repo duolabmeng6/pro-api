@@ -1,7 +1,6 @@
 import time
 
-from app.apiDB import apiDB
-db = apiDB("./api.yaml")
+from app.api_data import db
 
 
 from app.routers.JWTHandler import JWTHandler, JWTBearer

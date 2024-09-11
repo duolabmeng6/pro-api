@@ -2,7 +2,8 @@ import asyncio
 import json
 import os
 
-from app.apiDB import apiDB
+from api_data import db
+
 from app.provider.chatManager import chatManager
 from app.provider.openai.openaiProvider import openaiProvider
 from app.provider.gemini.geminiProvider import geminiProvider
@@ -12,7 +13,6 @@ from app.provider.vertexai.vertexaiGeminiProvider import vertexaiGeminiProvider
 
 def load_providers(db):
     ai_manager = chatManager()
-    # db = apiDB(os.path.join(os.path.dirname(__file__), '../api.yaml'))
 
     # 获取所有提供商配置
     all = db.get_all_provider()
@@ -58,7 +58,7 @@ def load_providers(db):
 
 if __name__ == "__main__":
     async def init():
-        db = apiDB(os.path.join(os.path.dirname(__file__), '../api.yaml'))
+        from api_data import db
         ai_manager = load_providers(db)
         request = """
     {

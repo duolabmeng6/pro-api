@@ -6,15 +6,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker, class_mapper
 from sqlalchemy.exc import OperationalError, SQLAlchemyError, IntegrityError
 import uuid
 import hashlib
-from dataclasses import dataclass
-from app.apiDB import apiDB
-
-db = apiDB(os.path.join(os.path.dirname(__file__), '../api.yaml'))
-# 定义全局变量
-DB_PATH = db.config_server.get("db_path", "")
-if DB_PATH == "":
-    print("没有配置数据库")
-    exit()
+from app.db.comm import db, DB_PATH
 
 Base = declarative_base()
 
@@ -100,14 +92,14 @@ class RequestLogger:
                     ReqLog.uri.like(f"%{keywords}%"),
                     ReqLog.status.like(f"%{keywords}%")
                 ))
-            
+
             total = query.count()
-            
+
             if order_dir.lower() == "desc":
                 query = query.order_by(getattr(ReqLog, order_by).desc())
             else:
                 query = query.order_by(getattr(ReqLog, order_by))
-            
+
             logs = query.offset((page - 1) * per_page).limit(per_page).all()
             return [self.to_dict(log) for log in logs], total
         except SQLAlchemyError as e:
@@ -147,7 +139,7 @@ class RequestLogger:
             log_id = log_data.pop('id', None)
             if log_id is None:
                 raise ValueError("更新日志时需要提供id")
-            
+
             session.query(ReqLog).filter(ReqLog.id == log_id).update(log_data)
             session.commit()
             return True
@@ -186,7 +178,7 @@ class RequestLogger:
             return False
         finally:
             session.close()
-            
+
     def statistics(self):
         session = self.Session()
         try:
@@ -195,7 +187,7 @@ class RequestLogger:
                 func.sum(ReqLog.prompt).label('total_prompt'),
                 func.sum(ReqLog.completion).label('total_completion')
             ).group_by(ReqLog.model).all()
-            
+
             return [
                 {
                     'model': item.model,
@@ -216,7 +208,7 @@ class RequestLogger:
             # 使用本地时间，并扩大时间范围
             end_date = datetime.datetime.now().date()
             start_date = end_date - datetime.timedelta(days=7)
-            
+
             print(f"查询时间范围: 从 {start_date} 到 {end_date}")
 
             # 修改查询，使用between来查询时间范围
@@ -239,13 +231,13 @@ class RequestLogger:
             # 获取所有唯一的日期和模型
             dates = sorted(set(item.date for item in result))
             models = sorted(set(item.model for item in result))
-            
+
             print(f"检测到的日期: {dates}")
             print(f"检测到的模型: {models}")
 
             # 创建一个字典来存储每个日期和模型的数据
             data_dict = {(date, model): {'prompt': 0, 'completion': 0} for date in dates for model in models}
-            
+
             # 填充实际数据
             for item in result:
                 data_dict[(item.date, item.model)] = {
@@ -258,7 +250,7 @@ class RequestLogger:
             for model in models:
                 prompt_data = [data_dict[(date, model)]['prompt'] for date in dates]
                 completion_data = [data_dict[(date, model)]['completion'] for date in dates]
-                
+
                 series.extend([
                     {
                         "name": f"{model} 提示词",
@@ -285,7 +277,7 @@ class RequestLogger:
                 "legend": {},
                 "tooltip": {
                     "trigger": "axis"
-                }   
+                }
             }
 
             print(f"生成的ECharts配置: {echarts_config}")

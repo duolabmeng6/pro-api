@@ -1,10 +1,8 @@
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+from api_data import db
 
-from app.apiDB import apiDB
-
-db = apiDB(os.path.join(os.path.dirname(__file__), './api.yaml'))
 
 save_log_file = db.config_server.get("save_log_file")
 
