@@ -137,7 +137,8 @@ services:
     container_name: pro-api
     image: duolabmeng/pro-api:latest
 #    environment:
-#      - CONFIG_URL=http://file_url/api.yaml
+#      - config_url=http://file_url/api.yaml
+#      - secret_key=123456789
     ports:
       - 8001:8000
     volumes:
@@ -145,9 +146,11 @@ services:
       - ./data/:/app/data:rw
 ```
 
-CONFIG_URL 就是可以自动下载远程的配置文件。
+config_url 自动下载远程的配置文件 
+secret_key 解密密钥,用aes加密,ECB,128位,保证配置文件的传输的安全性 当然你也可以选择不传入
 
-比如你在某个平台不方便修改配置文件，可以把配置文件传到某个托管服务，可以提供直链给 pro-api 下载，CONFIG_URL 就是这个直链。
+比如你在某个平台不方便修改配置文件，可以把配置文件传到某个托管服务，可以提供直链给 pro-api 下载，config_url 就是这个直链。
+如果你不想重启容器更新配置访问 /reload_config 即可重新下载刷新配置。
 
 
 一键重启 Docker 映像
@@ -157,7 +160,7 @@ set -eu
 docker pull duolabmeng/pro-api:latest
 docker rm -f pro-api
 docker run --user root -p 8001:8000 -dit --name pro-api \
--e CONFIG_URL=http://file_url/api.yaml \
+-e config_url=http://file_url/api.yaml \
 -v ./api.yaml:/app/api.yaml \
 duolabmeng/pro-api:latest
 docker logs -f pro-api

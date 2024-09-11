@@ -4,8 +4,7 @@ import os
 from pydantic import BaseModel
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from api_data import db
-db = db
+from api_data import db, get_db
 import ujson as json
 from types import SimpleNamespace
 from fastapi.routing import APIRoute
@@ -24,11 +23,12 @@ from app.error_info import generate_error_response
 import uuid
 import pyefun
 
-
 ai_manager = load_providers(db)
+
 if db.config_server.get("admin_server", False):
     from app.db.logDB import RequestLogger
     request_logger = RequestLogger()
+
 
 def print_routes():
     print("FastAPI 定义的路由:")
@@ -42,6 +42,7 @@ async def lifespan(app: FastAPI):
     logger.info("服务器启动")
     print_routes()
     yield
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -71,14 +72,17 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 security = HTTPBearer()
+
+
 @app.get("/")
 async def index():
     return {
-        "name":"pro-api",
-        "version":"1.0.0",
-        "author":"duolabmeng6",
-        "url":"https://github.com/duolabmeng6/pro-api",
+        "name": "pro-api",
+        "version": "1.0.0",
+        "author": "duolabmeng6",
+        "url": "https://github.com/duolabmeng6/pro-api",
     }
+
 
 def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
     api_key = credentials.credentials
@@ -94,10 +98,12 @@ def getProvider(providerConfig):
         raise HTTPException(status_code=500, detail="没有适配器")
     return chat
 
+
 class ChatCompletionRequest(BaseModel):
     stream: bool = False
     model: str
     id: str = None
+
 
 @app.post("/v1/chat/completions")
 async def chat_completions(
@@ -210,6 +216,7 @@ async def models(
         "data": db.get_all_models(api_key)
     }
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -218,15 +225,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 from fastapi.staticfiles import StaticFiles
+
 # 设置./web为静态目录
 if db.config_server.get("admin_server", False):
     from app.routers.router import api_router
+
     app.include_router(api_router, prefix="")
-    app.add_middleware(GZipMiddleware, minimum_size=100*1024)
+    app.add_middleware(GZipMiddleware, minimum_size=100 * 1024)
     app.mount("/", StaticFiles(directory="./public", html=True), name="static")
 
+
+@app.get("/reload_config")
+def reload_config():
+    global ai_manager, db
+    db = get_db()
+    ai_manager = load_providers(db)
+    return "已经执行刷新配置"
 
 
 if __name__ == "__main__":
@@ -240,4 +255,3 @@ if __name__ == "__main__":
         port=db.config_server.get("port", 8000),
         reload=True
     )
-
