@@ -136,9 +136,9 @@ services:
   pro-api:
     container_name: pro-api
     image: duolabmeng/pro-api:latest
-#    environment:
-#      - config_url=http://file_url/api.yaml
-#      - secret_key=123456789
+    environment:
+      - config_url=http://file_url/api.yaml
+      - secret_key=123456789
     ports:
       - 8001:8000
     volumes:

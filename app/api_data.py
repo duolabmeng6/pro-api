@@ -14,8 +14,6 @@ secret_key = os.environ.get('secret_key',"")
 
 
 
-
-
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
@@ -74,7 +72,7 @@ def get_down_url_config():
             return False
 
     else:
-        print("未检测到 CONFIG_URL 环境变量，跳过配置文件下载")
+        print("未检测到 config_url 环境变量，跳过配置文件下载")
         return False
 # 导出 db 实例
 db = get_db()
