@@ -128,21 +128,25 @@ def is_model_allowed(user_model: str, model_name: str) -> bool:
 
 if __name__ == "__main__":
     def init():
-        db = Database("./api.yaml")
+        db = apiDB("./api.yaml")
         ret = db.verify_token("sk-abcdefg")
         print("token状态", ret)
         ret = db.verify_token("sk-111111")
         print("token状态", ret)
 
-        provider, err = db.get_user_provider("sk-111111", "glm-4-flash")
+        provider, err = db.get_user_provider("sk-111111", "THUDM/chatglm3-6b")
         print("配置:", err, json.dumps(provider, indent=4))
-        provider, err = db.get_user_provider("sk-111111", "gpt-4o")
-        print("配置:", err, json.dumps(provider, indent=4))
-        provider, err = db.get_user_provider("sk-333333", "gpt-4o")
-        print("配置:", err, json.dumps(provider, indent=4))
-
-        provider, err = db.get_user_provider("sk-222222", "gpt-4o")
-        print("配置:", err, json.dumps(provider, indent=4))
-
+#
+#         provider, err = db.get_user_provider("sk-111111", "glm-4-flash")
+#         print("配置:", err, json.dumps(provider, indent=4))
+#         provider, err = db.get_user_provider("sk-111111", "gpt-4o")
+#         print("配置:", err, json.dumps(provider, indent=4))
+#         provider, err = db.get_user_provider("sk-333333", "gpt-4o")
+#         print("配置:", err, json.dumps(provider, indent=4))
+#
+#         provider, err = db.get_user_provider("sk-222222", "gpt-4o")
+#         print("配置:", err, json.dumps(provider, indent=4))
+# #
+        yield
 
     asyncio.run(init())
