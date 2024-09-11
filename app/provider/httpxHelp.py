@@ -1,7 +1,6 @@
 import hashlib
 import json
 
-from duckduckgo_search.utils import json_dumps
 from fastapi import HTTPException
 from typing import AsyncGenerator
 

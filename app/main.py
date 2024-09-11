@@ -1,6 +1,15 @@
-import json
 import sys
 import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import json
+import ujson
+def monkey_patch_json():
+    json.__name__ = 'ujson'
+    json.dumps = ujson.dumps
+    json.loads = ujson.loads
+monkey_patch_json()
+
+
 from types import SimpleNamespace
 
 from fastapi.routing import APIRoute

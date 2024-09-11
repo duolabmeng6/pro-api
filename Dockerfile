@@ -1,10 +1,11 @@
-FROM python:3.10.13 AS builder
+FROM python:3.11-slim AS builder
 COPY ./requirements.txt /home
 RUN pip install -r /home/requirements.txt
 
-FROM python:3.10.13-slim-bullseye
+FROM python:3.11-slim
 EXPOSE 8000
-WORKDIR /home
-COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
-COPY ./app /home
-ENTRYPOINT ["python", "-u", "/home/main.py"]
+RUN mkdir /app
+WORKDIR /app
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY ./app /app
+ENTRYPOINT ["python", "-u", "/app/main.py"]
