@@ -7,6 +7,7 @@ services:
       - "8000:8000"
     volumes:
       - ./api.yaml:/app/api.yaml
+      - ./data/:/app/data
     environment:
       - PYTHONUNBUFFERED=1
     restart: always
