@@ -6,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./app:/home
+      - ./api.yaml:/app/api.yaml
     environment:
       - PYTHONUNBUFFERED=1
     restart: always
