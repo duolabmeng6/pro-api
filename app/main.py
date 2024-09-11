@@ -244,7 +244,7 @@ def reload_config():
 class GzipStaticFiles(StaticFiles):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "http":
-            gzip_middleware = GZipMiddleware(super().__call__, minimum_size=100 * 1024,compresslevel=9)
+            gzip_middleware = GZipMiddleware(super().__call__,compresslevel=9)
             await gzip_middleware(scope, receive, send)
         else:
             await super().__call__(scope, receive, send)
