@@ -131,7 +131,7 @@ async def chat_completions(
     else:
         ai_chat._cache = False
         ai_chat._debug = False
-    ai_chat._db_cache = db.config_server.get("debug", False)
+    ai_chat._db_cache = db.config_server.get("db_cache", False)
 
     request_model_name = request.model
     body["model"] = provider.get("mapped_model")
