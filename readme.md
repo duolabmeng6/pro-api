@@ -1,11 +1,11 @@
 
-## Introduction
+## 介绍
 
 这是一个统一管理大模型API的项目，可以通过一个统一的API接口调用多个后端服务，统一转换为 OpenAI 格式，支持负载均衡。
 
 目前支持的后端服务有： OpenAI、Anthropic、Gemini、Vertex、cloudflare、DeepBricks、OpenRouter 等。
 
-## Configuration
+## 配置
 
 使用 api.yaml 配置文件，可以配置多个模型，每个模型可以配置多个后端服务，支持负载均衡。下面是 api.yaml 配置文件的示例：
 
@@ -94,8 +94,8 @@ providers:
 tokens:
   - api_key: sk-111111
     model:
-      - glm*
-      - all
+      - glm* # 可以使用通配符*
+      - all # all 代表全部都可以
 
   - api_key: sk-222222
     model:
@@ -104,76 +104,62 @@ tokens:
 server:
     port: 8000
     host: 0.0.0.0
-    default_model: glm-4-flash
+    default_model: glm-4-flash # 如果匹配不到，则使用这个默认的模型
     debug: false
     cache: false
     db_cache: true # 相同内容的情况下返回上一次成功的回复
     save_log_file: false
-    db_path: ./request_log.db
-
+    db_path: sqlite:///./data/request_log.db
+    username: admin # 后台用户名
+    password: admin # 后台密码
+    jwt_secret_key: admin # 随便填不填就随机
 ```
 
+## Docker 本地部署
 
-## 环境变量
-
-- CONFIG_URL: 配置文件的下载地址，可以是本地文件，也可以是远程文件，选填
-
-## Docker Local Deployment
-
-Start the container
+启动容器
 
 ```bash
 docker run --user root -p 8001:8000 --name pro-api -dit \
--v ./api.yaml:/home/api.yaml \
-duolabmeng6/pro-api:latest
+-v ./api.yaml:/app/api.yaml \
+duolabmeng/pro-api:latest
 ```
 
-Or if you want to use Docker Compose, here is a docker-compose.yml example:
+如果你想使用 Docker Compose，这里有一个 docker-compose.yml 示例：
 
 ```yaml
 services:
   pro-api:
     container_name: pro-api
-    image: duolabmeng6/pro-api:latest
-    environment:
-      - CONFIG_URL=http://file_url/api.yaml
+    image: duolabmeng/pro-api:latest
+#    environment:
+#      - CONFIG_URL=http://file_url/api.yaml
     ports:
       - 8001:8000
     volumes:
-      - ./api.yaml:/home/api.yaml
+      - ./api.yaml:/app/api.yaml
+      - ./data/:/app/data:rw
 ```
 
-CONFIG_URL 就是可以自动下载远程的配置文件。比如你在某个平台不方便修改配置文件，可以把配置文件传到某个托管服务，可以提供直链给 pro-api 下载，CONFIG_URL 就是这个直链。
+CONFIG_URL 就是可以自动下载远程的配置文件。
 
-Run Docker Compose container in the background
+比如你在某个平台不方便修改配置文件，可以把配置文件传到某个托管服务，可以提供直链给 pro-api 下载，CONFIG_URL 就是这个直链。
 
-```bash
-docker-compose pull
-docker-compose up -d
-```
 
-Docker build
-
-```bash
-docker build --no-cache -t pro-api:latest -f Dockerfile --platform linux/amd64 .
-docker tag pro-api:latest duolabmeng6/pro-api:latest
-docker push duolabmeng6/pro-api:latest
-```
-
-One-Click Restart Docker Image
+一键重启 Docker 映像
 
 ```bash
 set -eu
-docker pull duolabmeng6/pro-api:latest
+docker pull duolabmeng/pro-api:latest
 docker rm -f pro-api
 docker run --user root -p 8001:8000 -dit --name pro-api \
 -e CONFIG_URL=http://file_url/api.yaml \
--v ./api.yaml:/home/api.yaml \
-duolabmeng6/pro-api:latest
+-v ./api.yaml:/app/api.yaml \
+duolabmeng/pro-api:latest
 docker logs -f pro-api
 ```
 
-RESTful curl test
+RESTful curl 测试
 
 ```bash
 curl -X POST http://127.0.0.1:8000/v1/chat/completions \

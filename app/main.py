@@ -27,6 +27,25 @@ from apiDB import apiDB
 import uuid
 import pyefun
 
+def down_config():
+    import os
+    import httpx
+
+    config_url = os.environ.get('CONFIG_URL')
+    if config_url:
+        try:
+            response = httpx.get(config_url)
+            response.raise_for_status()
+            with open('./api.yaml', 'wb') as f:
+                f.write(response.content)
+            print("配置文件已成功下载到 ./api.yaml")
+        except httpx.HTTPError as e:
+            print(f"下载配置文件时发生错误: {e}")
+    else:
+        print("未检测到 CONFIG_URL 环境变量，跳过配置文件下载")
+
+down_config()
+
 db = apiDB(os.path.join(os.path.dirname(__file__), './api.yaml'))
 ai_manager = load_providers(db)
 request_logger = RequestLogger()
