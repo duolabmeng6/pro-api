@@ -1,11 +1,9 @@
 import asyncio
 from typing import AsyncGenerator
-from fastapi import HTTPException
 from app.provider.baseProvider import baseProvider
 from app.log import logger
 from app.provider.openaiSSEHandler import openaiSSEHandler as SSEHandler  # 改这里
 from app.provider.openaiSendBodyHeandler import openaiSendBodyHeandler
-
 
 class openaiProvider(baseProvider):
     def __init__(self, api_key: str, base_url: str = "https://api.openai.com/v1"):

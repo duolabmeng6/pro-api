@@ -186,6 +186,10 @@ curl -X POST http://127.0.0.1:8000/v1/chat/completions \
 -H "Authorization: Bearer ${API}" \
 -d '{"model": "gpt-4o","messages": [{"role": "user", "content": "Hello"}],"stream": true}'
 ```
+# 帮助
+1.如果在一些云平台不能安装依赖那么你可以直接把依赖安装到运行的目录
+
+pip install -r requirements.txt --no-user -t ./app 
 
 
 ## Star History
