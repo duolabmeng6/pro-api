@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  pro-api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/home
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: always

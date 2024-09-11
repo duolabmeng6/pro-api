@@ -46,7 +46,6 @@ htmlcov/
 # 其他
 *.csv
 *.json
-api.yaml
-*.yml
+*.yaml
 !config.yml
 .env
