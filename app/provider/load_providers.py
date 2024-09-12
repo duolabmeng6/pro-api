@@ -44,6 +44,9 @@ def load_providers(db):
         elif provider == "cohere":
             from app.provider.cohere.cohereProvider import cohereProvider
             chat = cohereProvider(providerConfig.get("api_key", ""), providerConfig.get("base_url", ""))
+        elif provider == "cloudflare":
+            from app.provider.cloudflare.cloudflareProvider import cloudflareProvider
+            chat = cloudflareProvider(providerConfig.get("api_key", ""), providerConfig.get("account_id", ""))
 
 
         if not chat:
@@ -66,7 +69,7 @@ if __name__ == "__main__":
         ai_manager = load_providers(db)
         request = """
     {
-        "model": "glm-4-flash",
+        "model": "@cf/qwen/qwen1.5-14b-chat-awq",
         "messages": [
             {
                 "role": "user",
@@ -77,9 +80,14 @@ if __name__ == "__main__":
     }
         
         """
+        # request = json.loads(request)
+        # data = ai_manager.chat("openai_智谱清言").chat2api(request, "glm-4-flash", "test")
+        # async for response in data:
+        #    logger.info(response)
+        #
         request = json.loads(request)
-        data = ai_manager.chat("openai_智谱清言").chat2api(request, "glm-4-flash", "test")
+
+        data = ai_manager.chat("cloudflare_cloudflare").chat2api(request, "@cf/qwen/qwen1.5-14b-chat-awq", "test")
         async for response in data:
            logger.info(response)
-
     asyncio.run(init())

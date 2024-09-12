@@ -103,6 +103,26 @@ providers:
       - gemini-1.5-flash-001
 
 
+  - provider: cohere
+    name: cohere
+    base_url: https://api.cohere.com/v1
+    api_key: 请填写
+    model:
+      - command-r-plus-08-2024
+      - command-r-plus-04-2024: gpt-4
+      - command-r-plus
+      - command-nightly
+      - command-light
+      - command-light-nightly
+
+  - provider: cloudflare
+    name: cloudflare
+    api_key: 请填写
+    account_id: 请填写
+    model:
+      - "@cf/qwen/qwen1.5-14b-chat-awq": qwen1.5-14b
+      - "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"
+
 tokens:
   - api_key: sk-111111
     model:
