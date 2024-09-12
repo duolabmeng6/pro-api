@@ -48,11 +48,11 @@
                 },
                 {
                     "name": "prompt",
-                    "label": "提示词token数"
+                    "label": "prompt"
                 },
                 {
                     "name": "completion",
-                    "label": "完成的内容token数"
+                    "label": "completion"
                 },
                 {
                     "name": "quota",
@@ -117,12 +117,12 @@
                                         },
                                         {
                                             "name": "prompt",
-                                            "label": "提示词token数",
+                                            "label": "prompt",
                                             "type": "static"
                                         },
                                         {
                                             "name": "completion",
-                                            "label": "完成的内容token数",
+                                            "label": "completion",
                                             "type": "static"
                                         },
                                         {

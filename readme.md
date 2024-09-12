@@ -1,9 +1,21 @@
 
 ## 介绍
 
-这是一个统一管理大模型API的项目，可以通过一个统一的API接口调用多个后端服务，统一转换为 OpenAI 格式，支持负载均衡。
+这是一个统一管理大模型API的项目，可以通过OpenAI 的API接口格式调用多个后端服务。
 
 目前支持的后端服务有： OpenAI、Anthropic、Gemini、Vertex、cloudflare、DeepBricks、OpenRouter 等。
+
+## 后台
+
+后台提供请求日志查询使用统计查询
+
+不启动后台就纯转发不记录任何东西
+
+![image-20240912122715188](./assets/image-20240912122715188.png)
+
+![image-20240912122804912](./assets/image-20240912122804912.png)
+
+![image-20240912122347488](./assets/image-20240912122347488.png)
 
 ## 配置
 
@@ -187,10 +199,12 @@ curl -X POST http://127.0.0.1:8000/v1/chat/completions \
 -d '{"model": "gpt-4o","messages": [{"role": "user", "content": "Hello"}],"stream": true}'
 ```
 # 帮助
-1.如果在一些云平台不能安装依赖那么你可以直接把依赖安装到运行的目录
+1.如果在一些云平台不能安装依赖那么你可以直接把依赖安装到运行的目录然后启动
 
+
+···
 pip install -r requirements.txt --no-user -t ./app 
-
+···
 
 ## Star History
 
