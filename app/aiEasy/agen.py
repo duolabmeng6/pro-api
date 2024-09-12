@@ -9,6 +9,7 @@ load_dotenv(dotenv_path='../.env')
 api_key = os.getenv('api_key')
 base_url = os.getenv('base_url')
 model = os.getenv('model', 'deepseek-chat')
+
 agent_factory = (
     Agently.AgentFactory()
     .set_settings("current_model", "OpenAI")
@@ -27,6 +28,12 @@ agent_gemini = (
     agent_factory.create_agent()
         .set_settings("model.OpenAI.options", { "model": "gemini-1.5-pro" })
 )
+agent_cohere = (
+    agent_factory.create_agent()
+        .set_settings("model.OpenAI.options", { "model": "command-r-plus-08-2024" })
+)
+
+
 
 from datetime import datetime
 import pytz
@@ -53,7 +60,7 @@ Agently.global_tool_manager.register(
 )
 Agently.global_tool_manager.register(**tool_info)
 result = (
-    agent_gemini
+    agent_cohere
         .use_public_tools(["get_now"])
         .input("我在北京，现在几点了？")
         .start()
