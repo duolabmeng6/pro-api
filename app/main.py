@@ -5,7 +5,7 @@ import time
 
 from starlette.types import Scope, Send, Receive
 
-from app.LoggingMiddleware import LoggingMiddleware
+
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pydantic import BaseModel
@@ -114,6 +114,7 @@ def get_provider(api_key, model):
     return provider
 
 if db.config_server.get("debug", False):
+    from app.LoggingMiddleware import LoggingMiddleware
     app.add_middleware(LoggingMiddleware)
 
 @app.post("/chat/completions")
