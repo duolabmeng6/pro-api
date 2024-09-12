@@ -176,9 +176,10 @@ async def chat_completions(
     first_chunk = await genData.__anext__()
 
     if not request.stream:
+        stats_data = ai_chat.DataHeadler.get_stats()
+
         if debug:
             logger.info(f"发送到客户端\r\n{first_chunk}")
-            stats_data = ai_chat.DataHeadler.get_stats()
             logger.info(f"SSE数据迭代完成，统计信息：{json.dumps(stats_data, indent=4)}")
 
         if db.config_server.get("admin_server", False):
@@ -198,11 +199,9 @@ async def chat_completions(
             async for chunk in genData:
                 yield chunk + "\n\n"
                 if debug:
-                    # await asyncio.sleep(0.05)
+                    await asyncio.sleep(0.1)
                     logger.info(f"发送到客户端\r\n{chunk}")
-                    stats_data = ai_chat.DataHeadler.get_stats()
-                    logger.info(f"数据迭代完成，统计信息：{json.dumps(stats_data, indent=4, ensure_ascii=False)}")
-
+            stats_data = ai_chat.DataHeadler.get_stats()
             if db.config_server.get("admin_server", False):
                 request_logger.update_req_log(
                     req_id=id,
@@ -213,7 +212,8 @@ async def chat_completions(
                     api_status="200",
                     api_error=""
                 )
-
+            if debug:
+                logger.info(f"数据迭代完成，统计信息：{json.dumps(stats_data, indent=4, ensure_ascii=False)}")
         return StreamingResponse(generate_stream(), media_type="text/event-stream")
 
 
