@@ -201,10 +201,10 @@ curl -X POST http://127.0.0.1:8000/v1/chat/completions \
 # 帮助
 1.如果在一些云平台不能安装依赖那么你可以直接把依赖安装到运行的目录然后启动
 
-
-···
+```shell
 pip install -r requirements.txt --no-user -t ./app 
-···
+
+```
 
 ## Star History
 
