@@ -3,6 +3,8 @@ import os
 import time
 import httpx
 import ujson as json
+from fastapi import HTTPException
+
 from app.provider.httpxHelp import get_api_data2
 import pyefun
 import app.help as help
@@ -19,19 +21,34 @@ def get_access_token(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN):
 
     if token_cache[CLIENT_ID]["access_token"] and now < token_cache[CLIENT_ID]["expiry"] - 120:
         return token_cache[CLIENT_ID]["access_token"]
+    try:
+        with httpx.Client() as client:
+            response = client.post(TOKEN_URL, json={
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "refresh_token": REFRESH_TOKEN,
+                "grant_type": "refresh_token"
+            })
+        data = response.json()
+        token_cache[CLIENT_ID]["access_token"] = data["access_token"]
+        token_cache[CLIENT_ID]["expiry"] = now + data["expires_in"]
+        access_token = token_cache[CLIENT_ID]["access_token"]
+    except httpx.RequestError as e:
+        error_data = {
+            "error": "网络请求错误",
+            "detail": str(e),
+            "response_body": TOKEN_URL,
+        }
+        raise HTTPException(status_code=503, detail=error_data)
+    except Exception as e:
+        error_data = {
+            "error": "vertexai access_token 获取失败",
+            "detail": str(e),
+            "response_body": TOKEN_URL,
+        }
+        raise HTTPException(status_code=429, detail=error_data)
 
-    with httpx.Client() as client:
-        response = client.post(TOKEN_URL, json={
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-            "refresh_token": REFRESH_TOKEN,
-            "grant_type": "refresh_token"
-        })
-    data = response.json()
-    token_cache[CLIENT_ID]["access_token"] = data["access_token"]
-    token_cache[CLIENT_ID]["expiry"] = now + data["expires_in"]
-
-    return token_cache[CLIENT_ID]["access_token"]
+    return access_token
 
 
 class openaiSendBodyHeandler:
