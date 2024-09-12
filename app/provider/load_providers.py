@@ -41,6 +41,10 @@ def load_providers(db):
                 providerConfig.get("CLIENT_SECRET", ""),
                 providerConfig.get("REFRESH_TOKEN", "")
             )
+        elif provider == "cohere":
+            from app.provider.cohere.cohereProvider import cohereProvider
+            chat = cohereProvider(providerConfig.get("api_key", ""), providerConfig.get("base_url", ""))
+
 
         if not chat:
             logger.info(f"未知的提供商类型: {provider}")
