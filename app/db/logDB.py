@@ -133,7 +133,7 @@ class CacheManager:
                 new_cache = ReqCache(md5=md5, req=req, resp=resp)
                 session.add(new_cache)
             session.commit()
-            print(f"缓存已{'更新' if existing_cache else '添加'}")
+            # print(f"缓存已{'更新' if existing_cache else '添加'}")
         except Exception as e:
             session.rollback()
             print(f"添加或更新缓存时出错: {str(e)}")

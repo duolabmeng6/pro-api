@@ -214,21 +214,22 @@ class openaiSSEHandler:
 
 
 if __name__ == "__main__":
-    testFIleList = [
-        "./debugdata/weather-gemini1a_deepseek-coder_openai_data.txt",
-    ]
-    for file_name in testFIleList:
-        print("正在检查：", file_name)
-        handler = openaiSSEHandler(custom_id=file_name)
-        with open(file_name, "r", encoding="utf-8") as file:
-            filedata = file.read()
-            out = handler.handle_data_line(filedata)
-            print(out)
-            print("文件统计信息：", json.dumps(handler.get_stats(), ensure_ascii=False, indent=4))
-
-    exit()
+    # testFIleList = [
+    #     "./debugdata/1.txt",
+    # ]
+    # for file_name in testFIleList:
+    #     print("正在检查：", file_name)
+    #     handler = openaiSSEHandler(custom_id=file_name)
+    #     with open(file_name, "r", encoding="utf-8") as file:
+    #         filedata = file.read()
+    #         out = handler.handle_data_line(filedata)
+    #         print(out)
+    #         print("文件统计信息：", json.dumps(handler.get_stats(), ensure_ascii=False, indent=4))
+    #
+    # exit()
     def autotest(name,stream=False):
         testFIleList = [
+            "./debugdata/1.txt",
         ]
         for root, dirs, files in os.walk("debugfile/debugdata/"):
             for file in files:
@@ -254,5 +255,5 @@ if __name__ == "__main__":
                 # ic(handler.get_stats())
                 print("-------------------")
 
-    # autotest("openai_sse.txt",True)
+    autotest("openai_sse.txt",True)
     # autotest("openai_data.txt",False)

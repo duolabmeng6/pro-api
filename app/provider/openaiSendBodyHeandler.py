@@ -194,7 +194,7 @@ class openaiSendBodyHeandler:
 
         return {
             "url": api_url,
-            "stream": False,
+            "stream": ready["stream"],
             "headers": {
                 "Content-Type": "application/json; charset=utf-8",
                 "Authorization": f"Bearer {access_token}",

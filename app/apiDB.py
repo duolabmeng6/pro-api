@@ -80,6 +80,18 @@ class apiDB:
     def get_all_provider(self):
         return self.providers
 
+    def get_admin_provider(self,  model_name: str) -> Tuple[List[Dict], str]:
+        """获取用户可用的提供者列表"""
+        usability_model = self.providersKV.get(model_name, [])
+        if not usability_model:
+            if not self.server_default:
+                return [], f"模型:{model_name}没有可用渠道"
+            usability_model = self.providersKV.get(self.server_default, [])
+            if not usability_model:
+                return [], f"模型:{model_name}没有可用渠道,也没有设置兜底模型 server.default_model"
+            return usability_model, ""
+        return usability_model, ""
+
     def get_user_provider(self, api_key: str, model_name: str) -> Tuple[List[Dict], str]:
         """获取用户可用的提供者列表"""
         if api_key not in self.tokens:

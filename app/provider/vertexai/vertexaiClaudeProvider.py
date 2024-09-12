@@ -46,9 +46,8 @@ class vertexaiClaudeProvider(baseProvider):
 
 if __name__ == "__main__":
     async def main():
-        from api_data import db
-        db = apiDB("../../api.yaml")
-        providers, error = db.get_user_provider("sk-111111", "claude-3-5-sonnet@20240620")
+        from app.api_data import db
+        providers, error = db.get_admin_provider( "claude-3-5-sonnet@20240620")
         provider = providers[0]
         print(provider)
         interface = vertexaiClaudeProvider(provider['PROJECT_ID'], provider['CLIENT_ID'], provider['CLIENT_SECRET'],

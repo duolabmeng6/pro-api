@@ -5,6 +5,8 @@ import time
 
 from starlette.types import Scope, Send, Receive
 
+from app.LoggingMiddleware import LoggingMiddleware
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pydantic import BaseModel
 import ujson as json
@@ -22,12 +24,10 @@ import uuid
 import pyefun
 from app.log import logger
 
-
 from app.api_data import db, get_db, reload_db
 from app.provider.load_providers import load_providers
 
 ai_manager = load_providers(db)
-
 
 
 @asynccontextmanager
@@ -42,10 +42,8 @@ async def lifespan(app: FastAPI):
     print_routes()
     yield
 
+
 app = FastAPI(lifespan=lifespan)
-
-
-
 
 
 @app.exception_handler(HTTPException)
@@ -108,6 +106,16 @@ class ChatCompletionRequest(BaseModel):
     id: str = None
 
 
+def get_provider(api_key, model):
+    providers, error = db.get_user_provider(api_key, model)
+    if not providers:
+        raise HTTPException(status_code=500, detail=error)
+    provider = providers[0]
+    return provider
+
+if db.config_server.get("debug", False):
+    app.add_middleware(LoggingMiddleware)
+
 @app.post("/chat/completions")
 @app.post("/v1/chat/completions")
 async def chat_completions(
@@ -120,12 +128,10 @@ async def chat_completions(
     except:
         raise HTTPException(status_code=500, detail="body解析失败")
 
-    providers, error = db.get_user_provider(api_key, request.model)
-    if not providers:
-        raise HTTPException(status_code=500, detail=error)
-    provider = providers[0]
+    provider = get_provider(api_key, request.model)
+
     headers = dict(req.headers)
-    id = str(uuid.uuid4())
+    id = str(uuid.uuid4().hex)[:16]
     request.id = headers.get("id", id)
     logger.name = f"main.{request.id}"
 
@@ -171,9 +177,8 @@ async def chat_completions(
     if not request.stream:
         if debug:
             logger.info(f"发送到客户端\r\n{first_chunk}")
-
-        stats_data = ai_chat.DataHeadler.get_stats()
-        logger.info(f"SSE 数据迭代完成，统计信息：{stats_data}")
+            stats_data = ai_chat.DataHeadler.get_stats()
+            logger.info(f"SSE数据迭代完成，统计信息：{json.dumps(stats_data, indent=4)}")
 
         if db.config_server.get("admin_server", False):
             request_logger.update_req_log(
@@ -192,13 +197,10 @@ async def chat_completions(
             async for chunk in genData:
                 yield chunk + "\n\n"
                 if debug:
-                    await asyncio.sleep(0.1)
+                    # await asyncio.sleep(0.05)
                     logger.info(f"发送到客户端\r\n{chunk}")
-
-
-
-            stats_data = ai_chat.DataHeadler.get_stats()
-            logger.info(f"数据迭代完成，统计信息：{stats_data}")
+                    stats_data = ai_chat.DataHeadler.get_stats()
+                    logger.info(f"数据迭代完成，统计信息：{json.dumps(stats_data, indent=4, ensure_ascii=False)}")
 
             if db.config_server.get("admin_server", False):
                 request_logger.update_req_log(
@@ -244,7 +246,7 @@ def reload_config():
 class GzipStaticFiles(StaticFiles):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "http":
-            gzip_middleware = GZipMiddleware(super().__call__,compresslevel=9)
+            gzip_middleware = GZipMiddleware(super().__call__, compresslevel=9)
             await gzip_middleware(scope, receive, send)
         else:
             await super().__call__(scope, receive, send)
@@ -252,8 +254,10 @@ class GzipStaticFiles(StaticFiles):
 
 if db.config_server.get("admin_server", False):
     from app.db.logDB import RequestLogger
+
     request_logger = RequestLogger()
     from app.routers.router import api_router
+
     app.include_router(api_router, prefix="")
     # app.mount("/", StaticFiles(directory="./public", html=True), name="static")
     # app.add_middleware(GZipMiddleware, minimum_size=100 * 1024)

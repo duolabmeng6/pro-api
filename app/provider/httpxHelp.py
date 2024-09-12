@@ -1,5 +1,7 @@
 import hashlib
 import json
+from app.log import logger
+
 from fastapi import HTTPException
 from typing import AsyncGenerator
 import httpx
@@ -13,7 +15,7 @@ if db.config_server.get("admin_server", False):
 
 async def raise_for_status(sendReady, response: httpx.Response):
     if response.status_code == 200:
-        print("raise_for_status", response.status_code)
+        # print("raise_for_status", response.status_code)
         return
     response_content = await response.aread()
     error_data = {
@@ -46,7 +48,6 @@ client = httpx.AsyncClient(
 
 async def get_api_data(sendReady) -> AsyncGenerator[str, None]:
     try:
-        DONE = False
         if sendReady["stream"]:
             async with client.stream("POST", sendReady["url"], headers=sendReady["headers"],
                                      json=sendReady["body"]) as response:
@@ -59,10 +60,6 @@ async def get_api_data(sendReady) -> AsyncGenerator[str, None]:
                         line = line.strip()
                         if line.startswith('data:'):  # 只处理 SSE 数据行
                             yield line
-                            if line == "data: [DONE]":
-                                DONE = True
-                if not DONE:
-                    yield "data: [DONE]"
         else:
             # 非流式请求
             response = await client.post(sendReady["url"], headers=sendReady["headers"], json=sendReady["body"])
@@ -90,7 +87,7 @@ async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:
     cache_md5 = hashlib.md5(json.dumps(sendReady['body']).encode('utf-8')).hexdigest()
     cache = cacheManager.get_from_cache(cache_md5)
     if cache:
-        print(f"命中缓存{cache_md5}次数: {cache.hit_count}")
+        logger.info(f"命中缓存{cache_md5}次数: {cache.hit_count}")
         if sendReady["stream"]:
             data = cache.resp
             arr = data.split("\r\n")
@@ -101,9 +98,11 @@ async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:
         else:
             yield cache.resp
         return
+    else:
+        logger.info(f"没有命中缓存{cache_md5}")
+
 
     cacheData = ""
-    DONE = False
     try:
         if sendReady["stream"]:
             async with client.stream("POST", sendReady["url"], headers=sendReady["headers"],
@@ -117,13 +116,7 @@ async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:
                         line = line.strip()
                         if line.startswith('data:'):  # 只处理 SSE 数据行
                             cacheData += line + "\r\n"
-                            if line == "data: [DONE]":
-                                DONE = True
                             yield line
-
-                if not DONE:
-                    yield "data: [DONE]"
-
         else:
             # 非流式请求
             response = await client.post(sendReady["url"], headers=sendReady["headers"], json=sendReady["body"])
@@ -135,7 +128,8 @@ async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:
     finally:
         # 无论是流式还是非流式请求，都在这里保存缓存
         if cacheData:
-            print(f"db Cache 保存{cache_md5}: {cacheData}")
+            logger.info(f"db Cache 保存{cache_md5}")
+            # logger.info(f"db Cache 保存{cache_md5}: 保存的数据:{cacheData}")
             cacheManager.add_to_cache(cache_md5, json.dumps(sendReady["body"]), cacheData)
 
 

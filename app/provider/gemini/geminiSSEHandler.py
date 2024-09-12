@@ -86,6 +86,8 @@ class geminiSSEHandler:
         line = line.strip()
         if line == "[DONE]":
             return "[DONE]"
+        if line == "":
+            return None
 
         try:
             json_data = json.loads(line)
@@ -234,7 +236,7 @@ class geminiSSEHandler:
 if __name__ == "__main__":
     def autotest(name, stream=False):
         testFIleList = [
-            "/Users/ll/Desktop/2024/ll-openai/app/provider/debugdata/cd1802d9-caa6-468c-ae2a-2a6181ca89c1_gemini-1.5-flash_gemini_sse.txt"
+            "/Users/ll/Desktop/2024/ll-openai/app/provider/debugdata/vertexai_gemini_gemini-1.5-pro_data.txt"
         ]
         for root, dirs, files in os.walk("../debugfile/debugdata/"):
             for file in files:
@@ -249,6 +251,7 @@ if __name__ == "__main__":
                         sse = handler.handle_SSE_data_line(line)
                         if sse:
                             pass
+                            print(sse)
                 else:
                     filedata = file.read()
                     sse = handler.handle_data_line(filedata)

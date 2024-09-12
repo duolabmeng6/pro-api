@@ -114,5 +114,5 @@ class baseProvider:
                 continue
             if content:
                 yield "data: " + content
-        if DONE:
-            yield "data: " + content
+        if not DONE:
+            yield "data: [DONE]"
