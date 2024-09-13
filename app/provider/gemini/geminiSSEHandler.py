@@ -37,7 +37,7 @@ class geminiSSEHandler:
             }
         }
 
-        # json_data = json.dumps(chunk, ensure_ascii=False)
+        # json_data = json.dumps(chunk)
         return chunk
 
     def generate_sse_response(self, content=None):
@@ -77,7 +77,7 @@ class geminiSSEHandler:
         else:
             return None
 
-        json_data = json.dumps(chunk, ensure_ascii=False)
+        json_data = json.dumps(chunk)
         return f"{json_data}"
 
     def handle_SSE_data_line(self, line: str):
