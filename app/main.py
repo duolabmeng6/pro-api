@@ -197,7 +197,7 @@ async def chat_completions(
     if first_chunk:
         async def generate_stream():
             async for chunk in genData:
-                yield chunk + "\n\n"
+                yield chunk + "\r\n\r\n"
                 if debug:
                     await asyncio.sleep(0.1)
                     logger.info(f"发送到客户端\r\n{chunk}")
