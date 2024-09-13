@@ -1,4 +1,6 @@
 import time
+
+import pyefun
 import ujson as json
 import os
 
@@ -38,7 +40,7 @@ class openaiSSEHandler:
             }
         }
 
-        # json_data = json.dumps(chunk, ensure_ascii=False)
+        # json_data = json.dumps(chunk)
         return chunk
     
     def generate_sse_response(self, content=None):
@@ -78,7 +80,7 @@ class openaiSSEHandler:
         else:
             return None
 
-        json_data = json.dumps(chunk, ensure_ascii=False)
+        json_data = json.dumps(chunk)
         return f"{json_data}"
 
     def handle_SSE_data_line(self, line: str):
@@ -229,7 +231,7 @@ if __name__ == "__main__":
     # exit()
     def autotest(name,stream=False):
         testFIleList = [
-            "./debugdata/1.txt",
+            "/Users/ll/Desktop/2024/ll-openai/app/provider/自留测试数据/sse.txt",
         ]
         for root, dirs, files in os.walk("debugfile/debugdata/"):
             for file in files:
@@ -253,7 +255,9 @@ if __name__ == "__main__":
                 print("文件统计信息：", json.dumps(handler.get_stats(), ensure_ascii=False, indent=4))
                 # print("文件统计信息：",json.dumps(handler.get_stats(), ensure_ascii=False))
                 # ic(handler.get_stats())
+                d =handler.get_stats()
+                pyefun.写到文件("1.html",d['full_message_content'])
                 print("-------------------")
 
-    autotest("openai_sse.txt",True)
+    autotest("xopenai_sse.txt",True)
     # autotest("openai_data.txt",False)
