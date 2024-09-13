@@ -35,7 +35,7 @@ client = httpx.AsyncClient(
         "Accept": "*/*",
         "User-Agent": "curl/7.68.0",
     },
-    timeout=httpx.Timeout(connect=15.0, read=600, write=30.0, pool=30.0),
+    timeout=httpx.Timeout(connect=120.0, read=600, write=120.0, pool=120.0),
     # http2=False,  # 将 http2 设置为 False
     verify=False,
     # follow_redirects=True,
@@ -143,7 +143,7 @@ def get_api_data2(sendReady):
                 "Accept": "*/*",
                 "User-Agent": "curl/7.68.0",
             },
-            timeout=httpx.Timeout(connect=15.0, read=600, write=30.0, pool=30.0),
+            timeout=httpx.Timeout(connect=120, read=600, write=120, pool=120),
             verify=False,
             proxies={
                 # "http://": "http://127.0.0.1:8888",
