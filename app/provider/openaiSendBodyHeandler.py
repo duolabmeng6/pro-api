@@ -1,5 +1,6 @@
 import base64
 import os
+import random
 import time
 import httpx
 import ujson as json
@@ -9,8 +10,40 @@ from app.provider.httpxHelp import get_api_data2
 import pyefun
 import app.help as help
 
-token_cache = {}
+from collections import deque
 
+class CircularList:
+    """循环列表类，用于管理循环队列。"""
+    
+    def __init__(self, items):
+        """初始化循环列表。"""
+        self.queue = deque(items)
+
+    def next(self):
+        """返回下一个元素，并将其移动到队列末尾。"""
+        if not self.queue:
+            return None
+        item = self.queue.popleft()
+        self.queue.append(item)
+        return item
+
+    def to_dict(self):
+        """返回队列的字典表示。"""
+        return {
+            'queue': list(self.queue)
+        }
+        
+# 定义不同位置的循环列表
+claude_35s_location = CircularList(["us-east5", "europe-west1"])
+claude_3s_location = CircularList(["us-east5", "us-central1", "asia-southeast1"])
+claude_3o_location = CircularList(["us-east5"])
+claude_3h = CircularList(["us-east5", "us-central1", "europe-west1", "europe-west4"])
+gemini_location = CircularList(["us-central1", "us-east4", "us-west1", "us-west4", "europe-west1", "europe-west2"])
+
+
+
+
+token_cache = {}
 
 def get_access_token(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN):
     TOKEN_URL = 'https://www.googleapis.com/oauth2/v4/token'
@@ -202,12 +235,13 @@ class openaiSendBodyHeandler:
         ready = self.get_Gemini()
 
         access_token = get_access_token(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN)
-        LOCATION_ID = "us-central1"
-        API_ENDPOINT = f"{LOCATION_ID}-aiplatform.googleapis.com"
+        location = gemini_location.next()
+
+        API_ENDPOINT = f"{location}-aiplatform.googleapis.com"
         if ready["stream"]:
-            api_url = f"https://{API_ENDPOINT}/v1/projects/{PROJECT_ID}/locations/{LOCATION_ID}/publishers/google/models/{MODEL}:streamGenerateContent?alt=sse"
+            api_url = f"https://{API_ENDPOINT}/v1/projects/{PROJECT_ID}/locations/{location}/publishers/google/models/{MODEL}:streamGenerateContent?alt=sse"
         else:
-            api_url = f"https://{API_ENDPOINT}/v1/projects/{PROJECT_ID}/locations/{LOCATION_ID}/publishers/google/models/{MODEL}:generateContent"
+            api_url = f"https://{API_ENDPOINT}/v1/projects/{PROJECT_ID}/locations/{location}/publishers/google/models/{MODEL}:generateContent"
 
         return {
             "url": api_url,
@@ -312,9 +346,18 @@ class openaiSendBodyHeandler:
                     }
                     payload["tools"].append(claude_tool)
 
-        # Claude API URL (for Vertex AI)
-        LOCATION = "europe-west1"
-        url = f"https://{LOCATION}-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/anthropic/models/{MODEL}:streamRawPredict"
+        if "claude-3-5-sonnet" in MODEL:
+            location = claude_35s_location
+        elif "claude-3-opus" in MODEL:
+            location = claude_3o_location   
+        elif "claude-3-sonnet" in MODEL:
+            location = claude_3s_location
+        elif "claude-3-haiku" in MODEL:
+            location = claude_3h
+
+        location = location.next()
+        
+        url = f"https://{location}-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/{location}/publishers/anthropic/models/{MODEL}:streamRawPredict"
         access_token = get_access_token(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN)
         return {
             "url": url,

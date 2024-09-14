@@ -53,7 +53,7 @@ class vertexaiGeminiProvider(baseProvider):
 if __name__ == "__main__":
     async def main():
         from app.api_data import db
-        providers, error = db.get_admin_provider( "gemini-1.5-pro")
+        providers, error = db.get_admin_provider( "v-gemini-1.5-pro")
         provider = providers[0]
         print(provider)
         interface = vertexaiGeminiProvider(provider['PROJECT_ID'], provider['CLIENT_ID'], provider['CLIENT_SECRET'], provider['REFRESH_TOKEN'],
@@ -64,18 +64,18 @@ if __name__ == "__main__":
         interface._cache = True
         interface._db_cache = True
         model_name = provider['mapped_model']
-        djson = pyefun.读入文本("/Users/ll/Desktop/2024/ll-openai/app/provider/sendbody/vertexai_gemini_c2cc1845-277e-4ba2-86f7-1411491aa5fe_gemini-1.5-pro.txt")
-        djson = json.loads(djson)
-
-        async for response in interface.chat2api(djson):
-            print(response)
-
-        # async for response in interface.chat2api({
-        #     "model": model_name,
-        #     "messages": [{"role": "user", "content": "请用三句话描述春天。"}],
-        #     "stream": True,
-        # }):
+        # djson = pyefun.读入文本("/Users/ll/Desktop/2024/ll-openai/app/provider/sendbody/vertexai_gemini_c2cc1845-277e-4ba2-86f7-1411491aa5fe_gemini-1.5-pro.txt")
+        # djson = json.loads(djson)
+        #
+        # async for response in interface.chat2api(djson):
         #     print(response)
+
+        async for response in interface.chat2api({
+            "model": model_name,
+            "messages": [{"role": "user", "content": "请用三句话描述春天。"}],
+            "stream": True,
+        }):
+            print(response)
 
         print(interface.DataHeadler.get_stats())
 
