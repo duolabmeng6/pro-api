@@ -74,6 +74,9 @@ def reload_db():
 
 def get_down_url_config():
     global config_url, secret_key
+    config_url = os.environ.get('config_url', "")
+    secret_key = os.environ.get('secret_key', "")
+    print(f"config_url: {config_url}")
     if config_url:
         try:
             print("下载", config_url)
