@@ -147,6 +147,56 @@ server:
 
 [vertexai的参数获取教程](./docs/vertexai的参数获取教程.md)
 
+# 负载均衡
+
+对相同模型名称的模型进行负载均衡
+
+默认权重为1 
+
+```
+  - provider: gemini
+    name: Gemini1
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    api_key: 请填写
+    model:
+      - gemini-1.5-pro
+      - gemini-1.5-flash
+      - gemini-1.5-flash : gemini-flash
+    balance: # 负载均衡
+      - gemini-1.5-pro: 1 #表示这个名称下的模型权重是1
+      - gemini-1.5-flash: 1 #表示这个名称下的模型权重是2
+      - gemini-flash: 1 #表示这个名称下的模型权重是2
+
+  - provider: gemini
+    name: Gemini2
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    api_key: 请填写
+    model:
+      - gemini-1.5-pro
+      - gemini-1.5-flash
+      - gemini-1.5-flash : gemini-flash
+    balance: # 负载均衡
+      - gemini-1.5-pro: 2 #表示这个名称下的模型权重是1
+      - gemini-1.5-flash: 2 #表示这个名称下的模型权重是2
+      - gemini-flash: 3 #表示这个名称下的模型权重是2
+```
+以上配置讲解:
+
+比如:
+
+当前权重信息
+
+* Gemini1 的 gemini-1.5-flash 权重1
+* Gemini2 的 gemini-1.5-flash 权重2
+
+请求 gemini-1.5-flash 的时候
+
+- 第1次 Gemini1 的 gemini-1.5-flash
+- 第2次 Gemini2 的 gemini-1.5-flash
+- 第3次 Gemini2 的 gemini-1.5-flash
+- 第4次 Gemini1 的 gemini-1.5-flash
+- 第5次 Gemini2 的 gemini-1.5-flash
+
 
 
 ## Docker 本地部署

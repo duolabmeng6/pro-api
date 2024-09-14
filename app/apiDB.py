@@ -3,6 +3,9 @@ import json
 import yaml
 from typing import List, Dict, Tuple
 from fastapi.logger import logger
+from patsy.user_util import balanced
+from app.Balance import Balance
+
 
 class apiDB:
     def __init__(self, content: str):
@@ -39,6 +42,15 @@ class apiDB:
             config_data['providers'][index] = provider
 
             for original_model, mapped_model in model_dict.items():
+                weight = 1
+                balance = provider.get('balance')  # [{'gemini-1.5-pro': 1}, {'gemini-1.5-flash': 1}]
+                if balance:
+                    # 循环balance检查key得到权重
+                    for item in balance:
+                        if original_model in item:
+                            weight = item[original_model]
+                            break
+
                 item = {
                     "name": provider.get('name'),
                     "provider": provider.get('provider'),
@@ -46,11 +58,12 @@ class apiDB:
                     "original_model": original_model,  # 请求的模型名称
                     "base_url": provider.get('base_url'),
                     "api_key": provider.get('api_key'),
+                    "weight": weight,
                 }
                 # 加入所有其他的属性到这里item
                 # 将provider中的其他属性添加到item中
                 for key, value in provider.items():
-                    if key not in ["name", "provider", "model", "base_url", "api_key"]:
+                    if key not in ["name", "provider", "model", "base_url", "api_key", "balance"]:
                         item[key] = value
                 providers.append(item)
 
@@ -80,7 +93,7 @@ class apiDB:
     def get_all_provider(self):
         return self.providers
 
-    def get_admin_provider(self,  model_name: str) -> Tuple[List[Dict], str]:
+    def get_admin_provider(self, model_name: str) -> Tuple[List[Dict], str]:
         """获取用户可用的提供者列表"""
         usability_model = self.providersKV.get(model_name, [])
         if not usability_model:
@@ -159,26 +172,37 @@ def is_model_allowed(user_model: str, model_name: str) -> bool:
 
 
 if __name__ == "__main__":
-    def init():
-        db = apiDB("./api.yaml")
-        ret = db.verify_token("sk-abcdefg")
-        print("token状态", ret)
-        ret = db.verify_token("sk-111111")
-        print("token状态", ret)
+    import pyefun
 
-        provider, err = db.get_user_provider("sk-111111", "THUDM/chatglm3-6b")
+
+    def init():
+        config = pyefun.读入文本("./api.yaml")
+        db = apiDB(config)
+        # ret = db.verify_token("sk-abcdefg")
+        # print("token状态", ret)
+        # ret = db.verify_token("sk-111111")
+        # print("token状态", ret)
+        api_key = "sk-111111"
+        model = "qwen2-72b"
+        model2 = "gemini-1.5-pro"
+
+        provider, err = db.get_user_provider(api_key, model)
         print("配置:", err, json.dumps(provider, indent=4))
-        #
-        #         provider, err = db.get_user_provider("sk-111111", "glm-4-flash")
-        #         print("配置:", err, json.dumps(provider, indent=4))
-        #         provider, err = db.get_user_provider("sk-111111", "gpt-4o")
-        #         print("配置:", err, json.dumps(provider, indent=4))
-        #         provider, err = db.get_user_provider("sk-333333", "gpt-4o")
-        #         print("配置:", err, json.dumps(provider, indent=4))
-        #
-        #         provider, err = db.get_user_provider("sk-222222", "gpt-4o")
-        #         print("配置:", err, json.dumps(provider, indent=4))
-        # #
+
+        provider2, err = db.get_user_provider(api_key, model2)
+        print("配置:", err, json.dumps(provider, indent=4))
+        balance = Balance(api_key + model, provider2)
+        balance = Balance(api_key + model2, provider)
+
+
+        for i in range(10):
+            p = balance.next()
+            print(p.data)
+
+        for i in range(10):
+            p = balance.next()
+            print(p.data)
+
         yield
 
 

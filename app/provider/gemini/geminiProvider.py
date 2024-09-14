@@ -15,7 +15,6 @@ class geminiProvider(baseProvider):
         self.setDebugSave("openai")
         self.DataHeadler = SSEHandler
 
-
     async def chat2api(self, request, request_model_name: str = "", id: str = "") -> AsyncGenerator[
         str, None]:
         model = request.get('model', "")
@@ -30,12 +29,15 @@ class geminiProvider(baseProvider):
 
 if __name__ == "__main__":
     async def main():
-        from api_data import db
-        db = apiDB("../../api.yaml")
-        providers, error = db.get_user_provider("sk-111111", "gemini-1.5-flash")
+        from app.api_data import db
+        providers, error = db.get_admin_provider("gemini-1.5-flash")
         provider = providers[0]
         print(provider)
-        interface = geminiProvider(provider['api_key'], provider['base_url'])
+        api_key = provider['api_key']
+        base_url = provider['base_url']
+        # base_url = "https://gemini.rongyiapi.com/v1beta"
+        # interface = geminiProvider(provider['api_key'], provider['base_url'])
+        interface = geminiProvider(api_key, base_url)
         interface.setDebugSave("weather-geminia_" + provider['mapped_model'])
         # interface._debug = True
         # interface._cache = True

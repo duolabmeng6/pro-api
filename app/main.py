@@ -5,8 +5,6 @@ import time
 
 from starlette.types import Scope, Send, Receive
 
-
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pydantic import BaseModel
 import ujson as json
@@ -106,16 +104,31 @@ class ChatCompletionRequest(BaseModel):
     id: str = None
 
 
+from app.Balance import Balance
+
+G_balance = {}
+
+
 def get_provider(api_key, model):
-    providers, error = db.get_user_provider(api_key, model)
-    if not providers:
-        raise HTTPException(status_code=500, detail=error)
-    provider = providers[0]
+    balance_key = f"{api_key}_{model}"
+    if balance_key in G_balance:
+        balance = G_balance[balance_key]
+    else:
+        providers, error = db.get_user_provider(api_key, model)
+        if not providers:
+            raise HTTPException(status_code=500, detail=error)
+        balance = Balance(api_key, providers)
+        G_balance[balance_key] = balance
+    provider = balance.next().data
+    print(f"provider: {provider}")
     return provider
+
 
 if db.config_server.get("debug", False):
     from app.LoggingMiddleware import LoggingMiddleware
+
     app.add_middleware(LoggingMiddleware)
+
 
 @app.post("/chat/completions")
 @app.post("/v1/chat/completions")
@@ -137,7 +150,9 @@ async def chat_completions(
     logger.name = f"main.{request.id}"
 
     logger.info(
-        f"服务提供者:{provider['provider']}, 请求模型:{request.model}, 当前模型:{provider.get('mapped_model')}, 名称:{provider.get('name')}")
+        f"服务提供者:{provider['provider']}_{provider['name']}, 请求模型:{request.model}, 当前模型:{provider.get('mapped_model')}, 名称:{provider.get('name')}")
+
+    # return provider['name']
 
     ai_chat = getProvider(provider)
     debug = db.config_server.get("debug", False)
@@ -214,6 +229,7 @@ async def chat_completions(
                 )
             if debug:
                 logger.info(f"数据迭代完成，统计信息：{json.dumps(stats_data, indent=4, ensure_ascii=False)}")
+
         return StreamingResponse(generate_stream(), media_type="text/event-stream")
 
 
@@ -271,6 +287,6 @@ if __name__ == "__main__":
         "__main__:app",
         host="0.0.0.0",
         port=8000,
-        #reload=True,
-        #workers=1,
+        # reload=True,
+        # workers=1,
     )
