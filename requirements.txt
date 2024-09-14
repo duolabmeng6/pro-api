@@ -13,3 +13,4 @@ requests~=2.32.3
 PyJWT~=2.8.0
 cryptography~=43.0.1
 cohere~=5.9.1
+pendulum
