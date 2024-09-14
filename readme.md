@@ -239,7 +239,7 @@ Note: Please ensure that your remote configuration file (`config_url`) can be ac
 
 Here I give the simplest configuration content
 
-config_url=https://可以访问下载配置的地址/api.yaml
+config_url=https://The address where you can access the download configuration/api.yaml
 
 ```
 providers:
@@ -343,6 +343,6 @@ pip install -r requirements.txt --no-user -t ./app
 
 ## Star History
 
-<a href=‘https://github.com/duolabmeng6/pro-api/stargazers’>
-        <img width=‘500’ alt=‘Star History Chart’ src=‘https://api.star-history.com/svg?repos=duolabmeng6/pro-api&type=Date’>
+<a href="https://github.com/duolabmeng6/pro-api/stargazers">
+        <img width="500" alt="Star History Chart" src="https://api.star-history.com/svg?repos=duolabmeng6/pro-api&type=Date">
 </a>
