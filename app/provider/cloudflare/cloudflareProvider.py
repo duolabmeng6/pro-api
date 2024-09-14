@@ -4,7 +4,6 @@ import os
 import time
 from typing import AsyncGenerator
 import httpx
-from chainlit.socket import message
 
 from app.help import load_env
 from app.provider.baseProvider import baseProvider
