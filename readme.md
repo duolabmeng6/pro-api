@@ -198,6 +198,23 @@ server:
 - 第5次 Gemini2 的 gemini-1.5-flash
 
 
+## vercel 部署
+
+
+点击下面的按钮一键部署到 Vercel：
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fduolabmeng6%2Fpro-api&env=config_url,secret_key&project-name=pro-api&repository-name=pro-api)
+
+部署时需要设置以下环境变量：
+
+- `config_url`: 远程配置文件的 URL
+- `secret_key`: 用于加密的密钥（如果不需要加密，可以留空）如果需要加密，请使用 aes-128-ecb 加密 不加密就给明文的配置内容
+
+部署完成后，访问 Vercel 分配的域名即可使用 API。
+
+注意：请确保您的远程配置文件 (`config_url`) 可以被公开访问，否则 Vercel 将无法获取配置信息。
+
+
 
 ## Docker 本地部署
 
