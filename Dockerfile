@@ -9,4 +9,5 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 COPY ./app .
 EXPOSE 8000
 ENV PYTHONUNBUFFERED=1
+ENV TZ=Asia/Shanghai
 CMD ["python", "main.py"]
