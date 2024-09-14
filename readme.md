@@ -1,15 +1,21 @@
+# pro-api
 
-## 介绍
+[English](./README.md)
+[简体中文](./README_CN.md)
 
-这是一个统一管理大模型API的项目，可以通过OpenAI 的API接口格式调用多个后端服务。
 
-目前支持的后端服务有： OpenAI、Anthropic、Gemini、Vertex、cloudflare、DeepBricks、OpenRouter 等。
+## Introduction
 
-## 后台
+This is a project that centrally manages a large model API and can call multiple backend services through OpenAI's API interface format. The project aims to simplify interactions with different AI models and support the calling of multiple backend services.
 
-后台提供请求日志查询使用统计查询
+## Supported backend services
 
-不启动后台就纯转发不记录任何东西
+Currently supported backend services include: OpenAI, Anthropic, Gemini, Vertex, Cloudflare, DeepBricks, OpenRouter, etc.
+
+## Background functions
+
+The background provides query of request logs and query of usage statistics. If the background is not started, only request forwarding is performed and no information is recorded.
+
 
 ![image-20240912122715188](./assets/image-20240912122715188.png)
 
@@ -17,48 +23,54 @@
 
 ![image-20240912122347488](./assets/image-20240912122347488.png)
 
-## 配置
+## Configuration
 
-使用 api.yaml 配置文件，可以配置多个模型，每个模型可以配置多个后端服务，支持负载均衡。下面是 api.yaml 配置文件的示例：
+Using the `api.yaml` configuration file, multiple models can be configured, and each model can be configured with multiple backend services to support load balancing. The following is an example of the `api.yaml` configuration file:
+
 
 api.yaml
 ```
 providers:
-  - provider: openai
-    name: 智谱清言
-    base_url: https://open.bigmodel.cn/api/paas/v4
-    api_key: 请填写你的api_key
+  - provider: openai # Service provider
+    name: ZhiPuQingYan # Service name
+    base_url: https://open.bigmodel.cn/api/paas/v4 # Service address
+    api_key: Please enter your api_key
     model:
-      - glm-4-flash
+      - glm-4-flash # Model name
       
 
   - provider: gemini
     name: Gemini
     base_url: https://generativelanguage.googleapis.com/v1beta
-    api_key: 请填写你的api_key
+    api_key: Please enter your API key
     model:
       - gemini-1.5-pro
       - gemini-1.5-flash
       - gemini-1.5-flash: gpt-4o
+    balance: # Configure load balancing. No configuration is default to 1
+      - gemini-1.5-pro: 1 #Indicates that the model weight under this name is 1
+      - gemini-1.5-flash: 1 #Indicates that the model weight under this name is 2
+      - gemini-flash: 1 #Indicates that the model weight under this name is 2
+
 
   - provider: openai
-    name: 豆包
+    name: doubao
     base_url: https://ark.cn-beijing.volces.com/api/v3
-    api_key: 请填写你的api_key
+    api_key: Please enter your api_key
     model:
-      - ep-20240906033439-zrc2x: doubao-pro-128k
+      - ep-20240906033439-zrc2x: doubao-pro-128k # You can simplify the model name to doubao-pro-128k
       - ep-20240613130011-c2zgx: doubao-pro-32k
       - ep-20240729175503-5bbf7: moonshot-v1-128k
 
   - provider: openai
-    name: 硅基流动
+    name: SiliconFlow
     base_url: https://api.siliconflow.cn/v1
-    api_key: 请填写你的api_key
+    api_key: Please enter your api_key
     model:
       - Qwen/Qwen2-72B-Instruct: qwen2-72b
       - Qwen/Qwen1.5-110B-Chat: qwen1.5-110b
       - deepseek-ai/DeepSeek-V2-Chat: deepseek-chat
-#      - deepseek-ai/DeepSeek-Coder-V2-Instruct: deepseek-coder
+      - deepseek-ai/DeepSeek-Coder-V2-Instruct: deepseek-coder
       - Qwen/Qwen2-7B-Instruct: qwen2-7b
       - Qwen/Qwen2-7B-Instruct: gpt-3.5-turbo
       - Qwen/Qwen2-1.5B-Instruct: qwen2-1.5b
@@ -77,7 +89,7 @@ providers:
   - provider: openai
     name: deepseek
     base_url: https://api.deepseek.com/v1
-    api_key: 请填写你的api_key
+    api_key: Please enter your api_key
     model:
       - deepseek-chat
       - deepseek-coder
@@ -85,20 +97,20 @@ providers:
 
   - provider: vertexai_claude
     name: vertexai_claude
-    PROJECT_ID: 请填写
-    CLIENT_ID: 请填写
-    CLIENT_SECRET: 请填写
-    REFRESH_TOKEN: 请填写
-    model:
-      - claude-3-5-sonnet@20240620
-      - claude-3-5-sonnet@20240620: claude-3-5-sonnet
+    PROJECT_ID: Please enter
+    CLIENT_ID: Please enter
+    CLIENT_SECRET: Please fill in
+REFRESH_TOKEN: Please fill in
+model:
+- claude-3-5-sonnet@20240620
+- claude-3-5-sonnet@20240620: claude-3-5-sonnet
 
   - provider: vertexai_gemini
     name: vertexai_gemini
-    PROJECT_ID: 请填写
-    CLIENT_ID: 请填写
-    CLIENT_SECRET: 请填写
-    REFRESH_TOKEN: 请填写
+    PROJECT_ID: Please fill in
+    CLIENT_ID: Please fill in
+    CLIENT_SECRET: Please fill in
+    REFRESH_TOKEN: Please fill in
     model:
       - gemini-1.5-flash-001
 
@@ -106,7 +118,7 @@ providers:
   - provider: cohere
     name: cohere
     base_url: https://api.cohere.com/v1
-    api_key: 请填写
+    api_key: Please enter
     model:
       - command-r-plus-08-2024
       - command-r-plus-04-2024: gpt-4
@@ -115,112 +127,146 @@ providers:
       - command-light
       - command-light-nightly
 
-  - provider: cloudflare
+  provider: cloudflare
     name: cloudflare
-    api_key: 请填写
-    account_id: 请填写
+    api_key: Please enter
+    account_id: Please enter
     model:
-      - "@cf/qwen/qwen1.5-14b-chat-awq": qwen1.5-14b
-      - "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"
+      - ‘@cf/qwen/qwen1.5-14b-chat-awq’: qwen1.5-14b
+      - ‘@hf/thebloke/deepseek-coder-6.7b-instruct-awq’
+
+
+  - provider: openai
+    name: openrouter
+    base_url: https://openrouter.ai/api/v1
+    api_key: s Please fill in
+    model:
+      - mattshumer/reflection-70b:free: reflection-70b
+      - nousresearch/hermes-3-llama-3.1-405b:free: llama-3.1-405b
+
+
 
 tokens:
   - api_key: sk-111111
     model:
-      - glm* # 可以使用通配符*
-      - all # all 代表全部都可以
+      - glm* # wildcard *
+      - all # all means all
 
   - api_key: sk-222222
     model:
       - gpt-3.5-turbo
 
 server:
-    default_model: glm-4-flash # 如果匹配不到，则使用这个默认的模型
+    default_model: glm-4-flash # If no match is found, this default model is used
     debug: false
-    admin_server: false # 是否启动后台功能 如果不启动则只转发不作任何记录
-    db_cache: false # 相同内容的情况下返回上一次成功的回复
+    admin_server: false # Whether to enable the background function. If not enabled, only forwarding is performed without any logging
+    db_cache: false # Return the last successful response if the content is the same
     save_log_file: false
     db_path: sqlite:///./data/request_log.db
-    username: admin # 后台用户名
-    password: admin # 后台密码
-    jwt_secret_key: admin # 随便填不填就随机
+    username: admin # Background user name
+    password: admin # Background password
+    jwt_secret_key: admin # Fill in whatever you like, it's random
 ```
 
-[vertexai的参数获取教程](./docs/vertexai的参数获取教程.md)
+[VertexAI parameter acquisition tutorial](./docs/vertexai的参数获取教程.md)
 
-# 负载均衡
+# Configure load balancing
 
-对相同模型名称的模型进行负载均衡
+Models with the same model name can be load balanced
 
-默认权重为1 
+The default weight is 1 
 
 ```
   - provider: gemini
     name: Gemini1
     base_url: https://generativelanguage.googleapis.com/v1beta
-    api_key: 请填写
+    api_key: Please fill in
     model:
       - gemini-1.5-pro
       - gemini-1.5-flash
       - gemini-1.5-flash : gemini-flash
-    balance: # 负载均衡
-      - gemini-1.5-pro: 1 #表示这个名称下的模型权重是1
-      - gemini-1.5-flash: 1 #表示这个名称下的模型权重是2
-      - gemini-flash: 1 #表示这个名称下的模型权重是2
+    balance: # Load balancing
+      - gemini-1.5-pro: 1 #indicates that the model weight under this name is 1
+      - gemini-1.5-flash: 1 #indicates that the model weight under this name is 2
+      - gemini-flash: 1 #indicates that the model weight under this name is 2
 
   - provider: gemini
     name: Gemini2
     base_url: https://generativelanguage.googleapis.com/v1beta
-    api_key: 请填写
+    api_key: Please fill in
     model:
       - gemini-1.5-pro
       - gemini-1.5-flash
       - gemini-1.5-flash : gemini-flash
-    balance: # 负载均衡
-      - gemini-1.5-pro: 2 #表示这个名称下的模型权重是1
-      - gemini-1.5-flash: 2 #表示这个名称下的模型权重是2
-      - gemini-flash: 3 #表示这个名称下的模型权重是2
+    balance: # Load balancing
+      - gemini-1.5-pro: 2 # Indicates that the model weight under this name is 1
+      - gemini-1.5-flash: 2 # indicates that the model weight under this name is 2
+      - gemini-flash: 3 # indicates that the model weight under this name is 2
 ```
-以上配置讲解:
+Explanation of the above configuration:
 
-比如:
+For example:
 
-当前权重信息
+Current weight information
 
-* Gemini1 的 gemini-1.5-flash 权重1
-* Gemini2 的 gemini-1.5-flash 权重2
+* Gemini1‘s gemini-1.5-flash weight 1
+* Gemini2’s gemini-1.5-flash weight 2
 
-请求 gemini-1.5-flash 的时候
+When requesting gemini-1.5-flash
 
-- 第1次 Gemini1 的 gemini-1.5-flash
-- 第2次 Gemini2 的 gemini-1.5-flash
-- 第3次 Gemini2 的 gemini-1.5-flash
-- 第4次 Gemini1 的 gemini-1.5-flash
-- 第5次 Gemini2 的 gemini-1.5-flash
-
-
-## vercel 部署
+- 1st time gemini-1.5-flash for Gemini1
+- 2nd time gemini-1.5-flash for Gemini2
+- 3rd time gemini-1.5-flash for Gemini2
+- 4th time gemini-1.5-flash for Gemini1
+- 5th time gemini-1.5-flash for Gemini2
 
 
-点击下面的按钮一键部署到 Vercel：
+## vercel deployment
+
+
+Click the button below to deploy to Vercel with one click:
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fduolabmeng6%2Fpro-api&env=config_url,secret_key&project-name=pro-api&repository-name=pro-api)
 
-部署时需要设置以下环境变量：
+The following environment variables need to be set during deployment:
 
-- `config_url`: 远程配置文件的 URL
-- `secret_key`: 用于加密的密钥（如果不需要加密，可以留空）如果需要加密，请使用 aes-128-ecb 加密 不加密就给明文的配置内容
+- `config_url`: URL of the remote configuration file
+- `secret_key`: key used for encryption (can be left blank if encryption is not required) If encryption is required, use aes-128-ecb encryption. If not encrypted, give the plaintext configuration content
 
-部署完成后，访问 Vercel 分配的域名即可使用 API。
+After deployment, access the domain name assigned by Vercel to use the API.
 
-注意：请确保您的远程配置文件 (`config_url`) 可以被公开访问，否则 Vercel 将无法获取配置信息。
+Note: Please ensure that your remote configuration file (`config_url`) can be accessed publicly, otherwise Vercel will not be able to retrieve the configuration information.
+
+Here I give the simplest configuration content
+
+config_url=https://可以访问下载配置的地址/api.yaml
+
+```
+providers:
+  - provider: openai
+    name: deepseek
+    base_url: https://api.deepseek.com/v1
+    api_key: sk-xxxxxxxxxxxxx
+    model:
+      - deepseek-chat
+      - deepseek-coder
+
+tokens:
+  - api_key: sk-123456
+    model:
+      - all
+
+server:
+    default_model: deepseek-chat
+
+```
 
 
+## Docker local deployment
 
-## Docker 本地部署
+Start the container
 
-启动容器
-
-1. 使用本地api.yaml配置文件启动
+1. Start using the local api.yaml configuration file
 ```bash
 docker run -d \
   --name pro-api \
@@ -230,22 +276,22 @@ docker run -d \
   duolabmeng/pro-api:latest
 ```
 
-2. 使用远程api.yaml配置文件启动
+2. Start with the remote api.yaml configuration file
 ```bash
 docker run -d \
   --name pro-api \
   -e config_url=http://你的服务器/api.yaml \
   -e secret_key=123456789 \
   -p 8001:8000 \
-  -v $(pwd)/api.yaml:/app/api.yaml \
-  -v $(pwd)/data:/app/data:rw \
-  duolabmeng/pro-api:latest
+  -v $(pwd)/api.yaml:/app/api.yaml
+-v $(pwd)/data:/app/data:rw
+duolabmeng/pro-api:latest
 ```
-config_url 自动下载远程的配置文件 
-secret_key 用aes加密,ECB,128位,如果你要安全记得启动aes密码,不填就给明文的配置内容
+config_url automatically downloads the remote configuration file 
+secret_key encrypted with aes, ECB, 128 bits, if you want to be safe remember to enable the aes password, if you don't fill it in, you will get the plaintext configuration
 
 
-3. 如果你想使用 Docker Compose
+3. If you want to use Docker Compose
 ```yaml
 services:
   pro-api:
@@ -261,32 +307,34 @@ services:
       - ./data/:/app/data:rw
 ```
 
-比如你在某个平台不方便修改配置文件，可以把配置文件传到某个托管服务，可以提供直链给 pro-api 下载，config_url 就是这个直链。
-如果你不想重启容器更新配置访问 /reload_config 即可重新下载刷新配置。
+For example, if you are not in a position to modify the configuration file on a certain platform, you can upload the configuration file to a hosting service, which can provide a direct link for pro-api to download. config_url is this direct link.
+If you don't want to restart the container to update the configuration, you can just refresh the configuration by accessing /reload_config.
 
 
-一键重启 Docker 映像
+Restart the Docker image with one click
 
 ```bash
 set -eu
 docker pull duolabmeng/pro-api:latest
 docker rm -f pro-api
-docker run --user root -p 8001:8000 -dit --name pro-api \
--v ./api.yaml:/app/api.yaml \
+docker run --user root -p 8001:8000 -dit --name pro-api
+-v ./api.yaml:/app/api.yaml
 duolabmeng/pro-api:latest
 docker logs -f pro-api
 ```
 
-RESTful curl 测试
+RESTful curl test
 
 ```bash
 curl -X POST http://127.0.0.1:8000/v1/chat/completions \
--H "Content-Type: application/json" \
--H "Authorization: Bearer ${API}" \
--d '{"model": "gpt-4o","messages": [{"role": "user", "content": "Hello"}],"stream": true}'
+-H ‘Content-Type: application/json’ \
+-H ‘Authorization: Bearer ${API}’ \
+-d ‘{’model‘: “gpt-4o”,’messages‘: [{’role‘: “user”, “content”: “Hello”}],’stream‘: true}’
 ```
-# 帮助
-1.如果在一些云平台不能安装依赖那么你可以直接把依赖安装到运行的目录然后启动
+
+# Help
+
+1. If you cannot install dependencies on some cloud platforms, you can directly install the dependencies in the running directory and then start
 
 ```shell
 pip install -r requirements.txt --no-user -t ./app 
@@ -295,6 +343,6 @@ pip install -r requirements.txt --no-user -t ./app
 
 ## Star History
 
-<a href="https://github.com/duolabmeng6/pro-api/stargazers">
-        <img width="500" alt="Star History Chart" src="https://api.star-history.com/svg?repos=duolabmeng6/pro-api&type=Date">
+<a href=‘https://github.com/duolabmeng6/pro-api/stargazers’>
+        <img width=‘500’ alt=‘Star History Chart’ src=‘https://api.star-history.com/svg?repos=duolabmeng6/pro-api&type=Date’>
 </a>
