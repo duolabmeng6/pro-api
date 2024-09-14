@@ -73,6 +73,7 @@ def reload_db():
 
 
 def get_down_url_config():
+    global config_url, secret_key
     if config_url:
         try:
             print("下载", config_url)
