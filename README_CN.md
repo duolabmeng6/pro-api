@@ -207,7 +207,7 @@ server:
 
 比如:
 
-当前���重信息
+当前权重信息
 
 * Gemini1 的 gemini-1.5-flash 权重1
 * Gemini2 的 gemini-1.5-flash 权重2
