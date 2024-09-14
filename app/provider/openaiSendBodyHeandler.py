@@ -105,16 +105,17 @@ class openaiSendBodyHeandler:
         url = f"{self.base_url}/chat/completions"
         payload = self.req
         payload["model"] = self.model
-
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "*/*",
+            "User-Agent": "curl/7.68.0"
+        }
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
         return {
             "url": url,
             "stream": payload.get("stream", False),
-            "headers": {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-                "Accept": "*/*",
-                "User-Agent": "curl/7.68.0"
-            },
+            "headers": headers,
             "body": payload
         }
 

@@ -75,6 +75,7 @@ def reload_db():
 def get_down_url_config():
     if config_url:
         try:
+            print("下载", config_url)
             response = httpx.get(config_url)
             response.raise_for_status()
             print("已读配置文件内容")

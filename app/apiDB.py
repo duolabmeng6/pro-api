@@ -88,6 +88,9 @@ class apiDB:
 
     def verify_token(self, api_key: str) -> bool:
         """验证API密钥是否有效"""
+        if 'all' in self.tokens:
+            api_key = 'all'
+
         return api_key in self.tokens
 
     def get_all_provider(self):
@@ -107,6 +110,9 @@ class apiDB:
 
     def get_user_provider(self, api_key: str, model_name: str) -> Tuple[List[Dict], str]:
         """获取用户可用的提供者列表"""
+        if 'all' in self.tokens:
+            api_key = 'all'
+
         if api_key not in self.tokens:
             return [], "没有授权"
 

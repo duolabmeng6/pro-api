@@ -10,6 +10,8 @@ class openaiProvider(baseProvider):
         super().__init__()
         self.api_key = api_key
         self.base_url = base_url
+        # 检查base_url 最后是/就删除
+        self.base_url = self.base_url.rstrip("/")
         self.setDebugSave("openai")
         self.DataHeadler = SSEHandler
 
@@ -27,6 +29,18 @@ class openaiProvider(baseProvider):
 
 if __name__ == "__main__":
     async def main():
+        model_name = "gpt-4o"
+        interface = openaiProvider("", base_url)
+        async for response in interface.chat2api({
+            "model": model_name,
+            "messages": [{"role": "user", "content": "请用三句话描述春天。"}],
+            "stream": True,
+        }):
+            print(response)
+
+
+
+        return
         from app.api_data import db
         model_test = [
             # "gpt-4o",
