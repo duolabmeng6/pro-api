@@ -254,7 +254,8 @@ app.add_middleware(
 
 @app.get("/reload_config")
 def reload_config():
-    global ai_manager, db
+    global ai_manager, db, G_balance
+    G_balance = {}
     db = reload_db()
     ai_manager = load_providers(db)
     return f"已经执行刷新配置{time.time()}"
