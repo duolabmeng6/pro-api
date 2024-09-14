@@ -4,5 +4,9 @@
     ],
     "routes": [
       {"src": "/(.*)", "dest": "app/main.py"}
-    ]
-  }
+    ],
+    "env": {
+        "config_url": "config_url",
+        "secret_key": "secret_key"
+    }
+}
