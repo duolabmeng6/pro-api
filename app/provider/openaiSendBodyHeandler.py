@@ -1,6 +1,5 @@
 import base64
 import os
-import random
 import time
 import httpx
 import ujson as json
@@ -382,9 +381,9 @@ if __name__ == "__main__":
 
     files = [
         # "./sendbody/openai_search3b_glm-4-flash.txt"
-        # "./sendbody/openai_普通问题.txt"
+        "./自留测试数据/openai_普通问题.txt"
         # "./sendbody/openai图片2.txt"
-        "/Users/ll/Desktop/2024/ll-openai/app/provider/sendbody/vertexai_gemini_weather-gemini-1.5-flash-001a_gemini-1.5-flash-001.txt"
+        # "/Users/ll/Desktop/2024/ll-openai/app/provider/sendbody/vertexai_gemini_weather-gemini-1.5-flash-001a_gemini-1.5-flash-001.txt"
 
     ]
     with open(files[0], "r", encoding="utf-8") as f:
@@ -434,7 +433,7 @@ if __name__ == "__main__":
         #     MODEL=model,
         # )
 
-        ic(pushdata)
+        print(pushdata)
         response = get_api_data2(pushdata)
         md5 = pyefun.取数据md5(response)
         if pushdata['stream']:

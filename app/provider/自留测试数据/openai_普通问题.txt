@@ -15,7 +15,7 @@
         {
             "role": "user",
             "content": "你喜欢什么"
-        },
+        }
     ],
     "model": "gpt-4o",
     "stream": true

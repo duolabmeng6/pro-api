@@ -22,10 +22,24 @@ import uuid
 import pyefun
 from app.log import logger
 
-from app.api_data import db, get_db, reload_db
+from app.api_data import db, get_db, reload_db, 监视配置
 from app.provider.load_providers import load_providers
+from app.Balance import Balance
 
-ai_manager = load_providers(db)
+G_balance = {}
+ai_manager = {}
+def reload_config():
+    global ai_manager, db, G_balance
+    G_balance = {}
+    db = reload_db()
+    ai_manager = load_providers(db)
+
+config_url = os.environ.get('config_url', False)
+if not config_url:
+    api_file_path = os.path.join(os.path.dirname(__file__), './api.yaml')
+    监视配置(api_file_path, reload_config)
+
+reload_config()
 
 
 @asynccontextmanager
@@ -101,11 +115,6 @@ class ChatCompletionRequest(BaseModel):
     stream: bool = False
     model: str
     id: str = None
-
-
-from app.Balance import Balance
-
-G_balance = {}
 
 
 def get_provider(api_key, model):
@@ -252,11 +261,8 @@ app.add_middleware(
 
 
 @app.get("/reload_config")
-def reload_config():
-    global ai_manager, db, G_balance
-    G_balance = {}
-    db = reload_db()
-    ai_manager = load_providers(db)
+def reloadconfig():
+    reload_config()
     return f"已经执行刷新配置{time.time()}"
 
 

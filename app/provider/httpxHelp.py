@@ -1,22 +1,34 @@
 import hashlib
 import json
-from app.log import logger
-from fastapi import HTTPException
+import re
 from typing import AsyncGenerator
+from fastapi import HTTPException
 import httpx
+from app.log import logger
 from app.api_data import db
 
 if db.config_server.get("admin_server", False):
     from app.db.logDB import CacheManager
-
     cacheManager = CacheManager()
 
-import re
+client = httpx.AsyncClient(
+    headers={
+        "Content-Type": "application/json",
+        "Accept": "*/*",
+        "User-Agent": "curl/7.68.0",
+    },
+    timeout=httpx.Timeout(connect=120.0, read=600, write=120.0, pool=120.0),
+    verify=False,
+    proxies={
+        # "http://": "http://127.0.0.1:8888",
+        # "https://": "http://127.0.0.1:8888",
+    },
+)
+
 async def raise_for_status(sendReady, response: httpx.Response):
     if response.status_code == 200:
         return
     response_content = await response.aread()
-
     newurl = sendReady.get("url")
     domain_pattern = r'https?://([^/]+)/?'
     match = re.search(domain_pattern, newurl)
@@ -29,28 +41,8 @@ async def raise_for_status(sendReady, response: httpx.Response):
         "response_body": response_content.decode("utf-8"),
         "status_code": response.status_code,
         "domain": domain,
-        # "body": sendReady.get("body"),
-        # "url": new_url,
     }
     raise HTTPException(status_code=500, detail=error_data)
-
-
-client = httpx.AsyncClient(
-    headers={
-        "Content-Type": "application/json",
-        "Accept": "*/*",
-        "User-Agent": "curl/7.68.0",
-    },
-    timeout=httpx.Timeout(connect=120.0, read=600, write=120.0, pool=120.0),
-    # http2=False,  # 将 http2 设置为 False
-    verify=False,
-    # follow_redirects=True,
-    proxies={  # 使用字典形式来指定不同类型的代理
-        # "http://": "http://127.0.0.1:8888",
-        # "https://": "http://127.0.0.1:8888",  # 如果代理服务器支持 HTTP 和 HTTPS，则可以这样设置
-    },
-)
-
 
 async def get_api_data(sendReady) -> AsyncGenerator[str, None]:
     try:
@@ -64,33 +56,26 @@ async def get_api_data(sendReady) -> AsyncGenerator[str, None]:
                     while '\n' in buffer:
                         line, buffer = buffer.split('\n', 1)
                         line = line.strip()
-                        if line.startswith('data:'):  # 只处理 SSE 数据行
+                        if line.startswith('data:'):
                             yield line
         else:
-            # 非流式请求
             response = await client.post(sendReady["url"], headers=sendReady["headers"], json=sendReady["body"])
             await raise_for_status(sendReady, response)
             response_text = response.content.decode("utf-8")
             yield response_text
     except httpx.RequestError as e:
-        error_data = {
-            "error": "网络请求错误",
-            "detail": str(e),
-        }
-        raise HTTPException(status_code=503, detail=error_data)
+        logger.error(f"网络请求错误: {e} {sendReady}")
+        # e.request.url.host
+        raise HTTPException(status_code=503, detail={"error": "网络请求错误", "detail": str(e)})
     except Exception as e:
-        error_data = {
-            "error": "上游服务器出现未知错误",
-            "detail": str(e),
-        }
-        raise HTTPException(status_code=500, detail=error_data)
-
+        logger.error(f"未知错误: {e} {sendReady}")
+        raise HTTPException(status_code=500, detail={"error": "上游服务器出现未知错误", "detail": str(e)})
 
 async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:
     cache_md5 = hashlib.md5(json.dumps(sendReady['body']).encode('utf-8')).hexdigest()
     cache = cacheManager.get_from_cache(cache_md5)
     if cache:
-        logger.info(f"命中缓存{cache_md5}次数: {cache.hit_count}")
+        logger.info(f"命中缓存 {cache_md5} 次数: {cache.hit_count}")
         if sendReady["stream"]:
             data = cache.resp
             arr = data.split("\r\n")
@@ -101,9 +86,8 @@ async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:
         else:
             yield cache.resp
         return
-    else:
-        logger.info(f"没有命中缓存{cache_md5}")
 
+    logger.info(f"没有命中缓存 {cache_md5}")
     cacheData = ""
     try:
         if sendReady["stream"]:
@@ -116,22 +100,24 @@ async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:
                     while '\n' in buffer:
                         line, buffer = buffer.split('\n', 1)
                         line = line.strip()
-                        if line.startswith('data:'):  # 只处理 SSE 数据行
+                        if line.startswith('data:'):
                             cacheData += line + "\r\n"
                             yield line
         else:
-            # 非流式请求
             response = await client.post(sendReady["url"], headers=sendReady["headers"], json=sendReady["body"])
             await raise_for_status(sendReady, response)
             response_text = response.content.decode("utf-8")
             cacheData = response_text
             yield response_text
-
+    except httpx.RequestError as e:
+        logger.error(f"网络请求错误: {e} {sendReady}")
+        raise HTTPException(status_code=503, detail={"error": "网络请求错误", "detail": str(e)})
+    except Exception as e:
+        logger.error(f"未知错误: {e} {sendReady}")
+        raise HTTPException(status_code=500, detail={"error": "上游服务器出现未知错误", "detail": str(e)})
     finally:
-        # 无论是流式还是非流式请求，都在这里保存缓存
         if cacheData:
-            logger.info(f"db Cache 保存{cache_md5}")
-            # logger.info(f"db Cache 保存{cache_md5}: 保存的数据:{cacheData}")
+            logger.info(f"缓存保存 {cache_md5}")
             cacheManager.add_to_cache(cache_md5, json.dumps(sendReady["body"]), cacheData)
 
 
