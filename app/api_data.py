@@ -16,22 +16,20 @@ from cryptography.hazmat.backends import default_backend
 import base64
 
 
-
-
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
-
-# 监视配置文件变化的事件处理器
-class ConfigFileHandler(FileSystemEventHandler):
-    def __init__(self, callback):
-        self.callback = callback
-
-    def on_modified(self, event):
-        if event.src_path.endswith('api.yaml'):
-            print("配置文件已更改，重新加载...")
-            self.callback()
-
 def 监视配置(文件路径, 修改回调fn):
+    from watchdog.observers import Observer
+    from watchdog.events import FileSystemEventHandler
+
+    # 监视配置文件变化的事件处理器
+    class ConfigFileHandler(FileSystemEventHandler):
+        def __init__(self, callback):
+            self.callback = callback
+
+        def on_modified(self, event):
+            if event.src_path.endswith('api.yaml'):
+                print("配置文件已更改，重新加载...")
+                self.callback()
+
     observer = Observer()
     handler = ConfigFileHandler(修改回调fn)
     observer.schedule(handler, path=os.path.dirname(文件路径), recursive=False)
