@@ -18,13 +18,17 @@ async def raise_for_status(sendReady, response: httpx.Response):
         # print("raise_for_status", response.status_code)
         return
     response_content = await response.aread()
+    new_url = sendReady.get("url")
+    # 截取域名部分
+    new_url = new_url.split("//")[-1]
+
     error_data = {
         "error": "上游服务器出现错误",
         "response_body": response_content.decode("utf-8"),
         "status_code": response.status_code,
         "model": sendReady.get("model"),
         "body": sendReady.get("body"),
-        "url": sendReady.get("url"),
+        "url": new_url,
     }
     raise HTTPException(status_code=500, detail=error_data)
 
@@ -100,7 +104,6 @@ async def get_api_data_cache(sendReady) -> AsyncGenerator[str, None]:
         return
     else:
         logger.info(f"没有命中缓存{cache_md5}")
-
 
     cacheData = ""
     try:
