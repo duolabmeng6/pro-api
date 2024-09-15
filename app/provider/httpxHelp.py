@@ -19,12 +19,11 @@ async def raise_for_status(sendReady, response: httpx.Response):
         return
     response_content = await response.aread()
     new_url = sendReady.get("url")
-    # 截取域名部分
     new_url = new_url.split("//")[-1]
 
     error_data = {
         "error": "上游服务器出现错误",
-        "response_body": response_content.decode("utf-8"),
+        # "response_body": response_content.decode("utf-8"),
         "status_code": response.status_code,
         "model": sendReady.get("model"),
         "body": sendReady.get("body"),
@@ -51,6 +50,8 @@ client = httpx.AsyncClient(
 
 
 async def get_api_data(sendReady) -> AsyncGenerator[str, None]:
+
+
     try:
         if sendReady["stream"]:
             async with client.stream("POST", sendReady["url"], headers=sendReady["headers"],
@@ -75,14 +76,14 @@ async def get_api_data(sendReady) -> AsyncGenerator[str, None]:
         error_data = {
             "error": "网络请求错误",
             "detail": str(e),
-            "response_body": sendReady['url'],
+            # "response_body": sendReady['url'],
         }
         raise HTTPException(status_code=503, detail=error_data)
     except Exception as e:
         error_data = {
             "error": "上游服务器出现未知错误",
             "detail": str(e),
-            "response_body": sendReady['url'],
+#             "response_body": sendReady['url'],
         }
         raise HTTPException(status_code=500, detail=error_data)
 
