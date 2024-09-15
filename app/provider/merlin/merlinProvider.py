@@ -3,11 +3,9 @@ import json
 import time
 from typing import AsyncGenerator
 
-from app.help import load_env
 from app.provider.baseProvider import baseProvider
 from app.log import logger
 from app.provider.merlin.merlin import send_merlin_request
-
 
 class merlinSendBodyHeandler:
     def __init__(self, openai_body):
@@ -172,13 +170,16 @@ class merlinProvider(baseProvider):
 
     async def chat2api(self, request, request_model_name: str = "", id: str = "") -> AsyncGenerator[
         str, None]:
-        model = request.get('model', "")
+        model = request.get("model","")
         stream = request.get('stream', False)
         logger.name = f"merlinProvider.{id}.model.{model}"
 
         sendbody = merlinSendBodyHeandler(request)
         message = sendbody.get_message()
         self.DataHeadler = merlinSSEHandler(id, request_model_name)
+        logger.info(f"model:{ model}",)
+
+
         response = send_merlin_request(self.api_key, message, model)
 
         if not stream:
@@ -187,6 +188,7 @@ class merlinProvider(baseProvider):
             yield self.DataHeadler.generate_response()
             return
 
+        yield True
         async for chunk in response:
             out = self.DataHeadler.handle_SSE_data_line(chunk)
             if out:

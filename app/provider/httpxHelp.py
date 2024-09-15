@@ -1,24 +1,22 @@
 import hashlib
 import json
 from app.log import logger
-
 from fastapi import HTTPException
 from typing import AsyncGenerator
 import httpx
 from app.api_data import db
-import re
 
 if db.config_server.get("admin_server", False):
     from app.db.logDB import CacheManager
 
     cacheManager = CacheManager()
 
-
+import re
 async def raise_for_status(sendReady, response: httpx.Response):
     if response.status_code == 200:
-        # print("raise_for_status", response.status_code)
         return
     response_content = await response.aread()
+
     newurl = sendReady.get("url")
     domain_pattern = r'https?://([^/]+)/?'
     match = re.search(domain_pattern, newurl)
@@ -26,8 +24,6 @@ async def raise_for_status(sendReady, response: httpx.Response):
         domain = match.group(1)
     else:
         domain = newurl
-
-
     error_data = {
         "error": "上游服务器出现错误",
         "response_body": response_content.decode("utf-8"),
@@ -76,7 +72,6 @@ async def get_api_data(sendReady) -> AsyncGenerator[str, None]:
             await raise_for_status(sendReady, response)
             response_text = response.content.decode("utf-8")
             yield response_text
-
     except httpx.RequestError as e:
         error_data = {
             "error": "网络请求错误",
