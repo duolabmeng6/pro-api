@@ -173,6 +173,7 @@ class merlinProvider(baseProvider):
     async def chat2api(self, request, request_model_name: str = "", id: str = "") -> AsyncGenerator[
         str, None]:
         model = request.get('model', "")
+        stream = request.get('stream', False)
         logger.name = f"merlinProvider.{id}.model.{model}"
 
         sendbody = merlinSendBodyHeandler(request)
@@ -180,7 +181,7 @@ class merlinProvider(baseProvider):
         self.DataHeadler = merlinSSEHandler(id, request_model_name)
         response = send_merlin_request(self.api_key, message, model)
 
-        if not request['stream']:
+        if not stream:
             async for chunk in response:
                 self.DataHeadler.handle_SSE_data_line(chunk)
             yield self.DataHeadler.generate_response()
