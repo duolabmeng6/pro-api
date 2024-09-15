@@ -18,8 +18,6 @@ async def raise_for_status(sendReady, response: httpx.Response):
         # print("raise_for_status", response.status_code)
         return
     response_content = await response.aread()
-    new_url = sendReady.get("url")
-    new_url = new_url.split("//")[-1]
 
     error_data = {
         "error": "上游服务器出现错误",
@@ -27,7 +25,7 @@ async def raise_for_status(sendReady, response: httpx.Response):
         "status_code": response.status_code,
         "model": sendReady.get("model"),
         "body": sendReady.get("body"),
-        "url": new_url,
+        # "url": new_url,
     }
     raise HTTPException(status_code=500, detail=error_data)
 
