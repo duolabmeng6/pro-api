@@ -55,7 +55,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     if isinstance(exc.detail, HTTPException):
         detail = exc.detail.detail
         status_code = 500
-        message = detail.get("error")
     else:
         detail = exc.detail
 

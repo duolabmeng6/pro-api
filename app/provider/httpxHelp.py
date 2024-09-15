@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from typing import AsyncGenerator
 import httpx
 from app.api_data import db
+import re
 
 if db.config_server.get("admin_server", False):
     from app.db.logDB import CacheManager
@@ -18,13 +19,21 @@ async def raise_for_status(sendReady, response: httpx.Response):
         # print("raise_for_status", response.status_code)
         return
     response_content = await response.aread()
+    newurl = sendReady.get("url")
+    domain_pattern = r'https?://([^/]+)/?'
+    match = re.search(domain_pattern, newurl)
+    if match:
+        domain = match.group(1)
+    else:
+        domain = newurl
+
 
     error_data = {
         "error": "上游服务器出现错误",
-        # "response_body": response_content.decode("utf-8"),
+        "response_body": response_content.decode("utf-8"),
         "status_code": response.status_code,
-        "model": sendReady.get("model"),
-        "body": sendReady.get("body"),
+        "domain": domain,
+        # "body": sendReady.get("body"),
         # "url": new_url,
     }
     raise HTTPException(status_code=500, detail=error_data)
@@ -48,8 +57,6 @@ client = httpx.AsyncClient(
 
 
 async def get_api_data(sendReady) -> AsyncGenerator[str, None]:
-
-
     try:
         if sendReady["stream"]:
             async with client.stream("POST", sendReady["url"], headers=sendReady["headers"],
@@ -74,14 +81,12 @@ async def get_api_data(sendReady) -> AsyncGenerator[str, None]:
         error_data = {
             "error": "网络请求错误",
             "detail": str(e),
-            # "response_body": sendReady['url'],
         }
         raise HTTPException(status_code=503, detail=error_data)
     except Exception as e:
         error_data = {
             "error": "上游服务器出现未知错误",
             "detail": str(e),
-#             "response_body": sendReady['url'],
         }
         raise HTTPException(status_code=500, detail=error_data)
 

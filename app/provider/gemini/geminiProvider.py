@@ -23,7 +23,7 @@ class geminiProvider(baseProvider):
         sendReady.header_openai(request)
         pushdata = sendReady.get_Gemini()  # 改这里
         self.DataHeadler = SSEHandler(id, request_model_name)
-        async for chunk in self.chat2api_super(request, request_model_name, id, pushdata):
+        async for chunk in self.chat2api_super(request, model, id, pushdata):
             yield chunk
 
 
