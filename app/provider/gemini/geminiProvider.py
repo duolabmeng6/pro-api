@@ -30,7 +30,9 @@ class geminiProvider(baseProvider):
 if __name__ == "__main__":
     async def main():
         from app.api_data import db
-        providers, error = db.get_admin_provider("gemini-1.5-flash")
+        import json
+        import pyefun
+        providers, error = db.get_admin_provider("gemini-1.5-pro")
         provider = providers[0]
         print(provider)
         api_key = provider['api_key']
@@ -42,13 +44,22 @@ if __name__ == "__main__":
         # interface._debug = True
         # interface._cache = True
         model_name = provider['mapped_model']
-        # 读取JSON文件
-        async for response in interface.chat2api({
-            "model": model_name,
-            "messages": [{"role": "user", "content": "请用三句话描述春天。"}],
-            "stream": True,
-        }):
+
+
+        djson = pyefun.读入文本("../自留测试数据/xhy的.txt")
+        djson = json.loads(djson)
+
+        async for response in interface.chat2api(djson):
             print(response)
+
+
+        # 读取JSON文件
+        # async for response in interface.chat2api({
+        #     "model": model_name,
+        #     "messages": [{"role": "user", "content": "请用三句话描述春天。"}],
+        #     "stream": True,
+        # }):
+        #     print(response)
 
 
     asyncio.run(main())

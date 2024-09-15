@@ -47,6 +47,9 @@ def load_providers(db):
         elif provider == "cloudflare":
             from app.provider.cloudflare.cloudflareProvider import cloudflareProvider
             chat = cloudflareProvider(providerConfig.get("api_key", ""), providerConfig.get("account_id", ""))
+        elif provider == "merlin":
+            from app.provider.merlin.merlinProvider import merlinProvider
+            chat = merlinProvider(providerConfig.get("api_key", ""))
 
 
         if not chat:

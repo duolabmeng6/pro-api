@@ -1,18 +1,15 @@
 import asyncio
 import json
-import os
 import time
 from typing import AsyncGenerator
-
-import cohere
-import httpx
 
 from app.help import load_env
 from app.provider.baseProvider import baseProvider
 from app.log import logger
+from app.provider.merlin.merlin import send_merlin_request
 
 
-class cohereSendBodyHeandler:
+class merlinSendBodyHeandler:
     def __init__(self, openai_body):
         if isinstance(openai_body, str):
             request = json.loads(openai_body)
@@ -22,24 +19,28 @@ class cohereSendBodyHeandler:
 
     def get_chat_history(self):
         messages = self.openai_body.get('messages', [])
-        chat_history = []
-        for message in messages[:-1]:  # 排除最后一条消息，因为它将作为当前查询
-            role = message['role']
-            content = message['content']
-            if role == 'user':
-                chat_history.append({"role": "USER", "message": content})
-            elif role == 'assistant':
-                chat_history.append({"role": "CHATBOT", "message": content})
-        return chat_history
+        return messages
 
     def get_message(self):
-        messages = self.openai_body.get('messages', [])
-        if messages:
-            return messages[-1]['content']
-        return ""
+        # 把信息聚合成一条 比如 
+        # system: 内容
+        # user: 内容
+        # assistant: 内容
+        messages = self.get_chat_history()
+        message = ""
+        for item in messages:
+            if item['role'] == 'system':
+                message += f"system: {item['content']}\n"
+            elif item['role'] == 'user':
+                message += f"user: {item['content']}\n"
+            elif item['role'] == 'assistant':
+                message += f"assistant: {item['content']}\n"
+
+        return message
 
 
-class cohereSSEHandler:
+
+class merlinSSEHandler:
     def __init__(self, custom_id=None, model=""):
         self.custom_id = custom_id
         self.prompt_tokens = 0
@@ -117,7 +118,33 @@ class cohereSSEHandler:
         return f"{json_data}"
 
     def handle_SSE_data_line(self, line: str):
-        return self.generate_sse_response({'type': 'content', 'content': line})
+        # {"status":"success","data":{"content":"好的"}}
+        # {"status":"system","data":{"content":" ","eventType":"DONE"}}
+        if line.startswith("data:"):
+            line = line[5:].strip()
+        line = line.strip()
+        if line == "[DONE]":
+            return "[DONE]"
+        if line == "":
+            return None
+
+        try:
+            data = json.loads(line)
+            content = data.get('data', {}).get('content', '')
+            eventType = data.get('data', {}).get('eventType', '')
+            if content != "":
+                self.full_message_content += content
+                return self.generate_sse_response({"type": "content", "content": content})
+            if eventType == "DONE":
+                return self.generate_sse_response({"type": "stop"})
+
+            return None
+        except json.JSONDecodeError as e:
+            print(f"JSON解析失败: {e}\r\n{line}\r\n")
+            return None
+        except Exception as e:
+            print(f"处理失败: {e}\r\n{line}\r\n")
+            return None
 
     def get_stats(self):
         return {
@@ -136,88 +163,55 @@ class cohereSSEHandler:
         return response
 
 
-class cohereProvider(baseProvider):
-    def __init__(self, api_key: str, base_url: str = "https://api.cohere.com/v1"):
+class merlinProvider(baseProvider):
+    def __init__(self, api_key: str):
         super().__init__()
         self.api_key = api_key
-        self.base_url = base_url
-        self.setDebugSave("cohere")
-        self.DataHeadler = cohereSSEHandler
+        self.setDebugSave("merlin")
+        self.DataHeadler = merlinSSEHandler
 
     async def chat2api(self, request, request_model_name: str = "", id: str = "") -> AsyncGenerator[
         str, None]:
-        model = request.get('model', "command-r-plus-08-2024")
-        logger.name = f"cohereProvider.{id}.model.{model}"
-        co = cohere.AsyncClient(
-            api_key=self.api_key,
-            base_url=self.base_url,
-            # httpx_client=httpx.Client(
-            #     proxies="http://127.0.0.1:8888",
-            #     transport=httpx.HTTPTransport(local_address="0.0.0.0"),
-            #     verify=False
-            # )
-        )
+        model = request.get('model', "")
+        logger.name = f"merlinProvider.{id}.model.{model}"
 
-        sendbody = cohereSendBodyHeandler(request)
+        sendbody = merlinSendBodyHeandler(request)
         message = sendbody.get_message()
-        chat_history = sendbody.get_chat_history()
-        self.DataHeadler = cohereSSEHandler(id, request_model_name)
+        self.DataHeadler = merlinSSEHandler(id, request_model_name)
+        response = send_merlin_request(self.api_key, message, model)
+
         if not request['stream']:
-            chunk = co.chat(
-                message=message,
-                model=model,
-                chat_history=chat_history,
-                temperature=0.3,
-                prompt_truncation="AUTO",
-                citation_quality="accurate",
-                # connectors=[{"id": "web-search"}]
-            )
-            self.DataHeadler.full_message_content = chunk.text
-            self.DataHeadler.prompt_tokens = chunk.meta.tokens.input_tokens
-            self.DataHeadler.completion_tokens = chunk.meta.tokens.output_tokens
-            self.DataHeadler.total_tokens = chunk.meta.tokens.input_tokens + chunk.meta.tokens.output_tokens
-            self.DataHeadler.tool_calls = None
+            async for chunk in response:
+                self.DataHeadler.handle_SSE_data_line(chunk)
             yield self.DataHeadler.generate_response()
             return
 
-        response = co.chat_stream(
-            message=message,
-            model=model,
-            chat_history=chat_history,
-            temperature=0.3,
-            prompt_truncation="AUTO",
-            citation_quality="accurate",
-#             connectors=[{"id": "web-search"}]
-        )
-
         async for chunk in response:
-            if chunk.event_type == "text-generation":
-                yield "data: " + self.DataHeadler.handle_SSE_data_line(chunk.text)
-            elif chunk.event_type == "stream-end":
-                self.DataHeadler.full_message_content = chunk.response.text
-                self.DataHeadler.prompt_tokens = chunk.response.meta.tokens.input_tokens
-                self.DataHeadler.completion_tokens = chunk.response.meta.tokens.output_tokens
-                self.DataHeadler.total_tokens = chunk.response.meta.tokens.input_tokens + chunk.response.meta.tokens.output_tokens
-                self.DataHeadler.tool_calls = None
-                yield "data: [DONE]"
+            out = self.DataHeadler.handle_SSE_data_line(chunk)
+            if out:
+                yield "data: " + out
 
 
 if __name__ == "__main__":
     async def main():
-        load_env()
-        base_url = os.getenv('cohere_base_url')
-        api_key = os.getenv('cohere_api_key')
+        import pyefun
+        api_key = pyefun.读入文本("api_key.txt")
         model_test = [
-            "command-r-plus-08-2024"
+            "gpt-4o-mini",
+            # "claude-3-haiku",
         ]
 
         for model_name in model_test:
-            interface = cohereProvider(api_key, base_url)
+            interface = merlinProvider(api_key)
             interface.setDebugSave(f"{model_name}")
             content = ""
             async for response in interface.chat2api({
                 "model": model_name,
-                "messages": [{"role": "user", "content": "请用三句话描述春天。"}],
+                "messages": [
+                    # {"role": "system", "content": "你的名字叫小红。如果"},
+                    {"role": "user", "content": "你是什么模型"},
+                ],
+                # "stream": True,
                 "stream": True,
             }):
                 print(response)
