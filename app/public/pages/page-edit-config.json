@@ -1,0 +1,29 @@
+{
+    "type": "page",
+    "title": "编辑配置",
+    "body": {
+        "type": "form",
+        "title": "api.yaml",
+        "initApi": {
+            "url": "/admin/config",
+            "method": "get"
+        },
+        "preventEnterSubmit": true,
+        "body": [
+            {
+                "type": "editor",
+                "language": "yaml",
+                "name": "content"
+            },
+            {
+                "type": "button",
+                "label": "保存",
+                "actionType": "submit",
+                "api": {
+                    "url": "/admin/config",
+                    "method": "post"
+                }
+            }
+        ]
+    }
+}

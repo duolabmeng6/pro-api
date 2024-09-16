@@ -20,6 +20,16 @@
       {
         "children": [
           {
+            "label": "系统配置管理",
+            "url": "/pages/edit-config",
+            "icon": "fa fa-cube",
+            "schemaApi": "get:/pages/page-edit-config.json"
+          }
+        ]
+      },
+      {
+        "children": [
+          {
             "label": "请求日志",
             "url": "/pages/reqlog",
             "icon": "fa fa-cube",
