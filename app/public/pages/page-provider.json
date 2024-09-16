@@ -1,0 +1,81 @@
+{
+    "type": "page",
+    "title": "渠道管理",
+    "remark": null,
+    "name": "page-provider",
+    "body": [
+        {
+            "type": "crud",
+            "syncLocation": false,
+            "api": {
+                "method": "get",
+                "url": "/admin/provider",
+                "adaptor": "const uniqueProviders = [...new Set(payload.items.map(item => item.provider))]; const uniqueNames = [...new Set(payload.items.map(item => item.name))]; const uniqueOriginalModels = [...new Set(payload.items.map(item => item.original_model))]; const uniqueMappedModels = [...new Set(payload.items.map(item => item.mapped_model))]; return {\n  ...payload,\n  providerOptions: uniqueProviders.map(provider => ({\n    label: provider,\n    value: provider\n  })),\n  nameOptions: uniqueNames.map(name => ({\n    label: name,\n    value: name\n  })),\n  originalModelOptions: uniqueOriginalModels.map(model => ({\n    label: model,\n    value: model\n  })),\n  mappedModelOptions: uniqueMappedModels.map(model => ({\n    label: model,\n    value: model\n  }))\n}"
+            },
+            "perPage": 100,
+            "loadDataOnce": true,
+            "columns": [
+                {
+                    "name": "provider",
+                    "label": "提供商",
+                    "type": "text",
+                    "searchable": {
+                        "type": "select",
+                        "name": "provider",
+                        "label": "提供商",
+                        "placeholder": "选择提供商",
+                        "source": "${providerOptions}"
+                    }
+                },
+                {
+                    "name": "name",
+                    "label": "名称",
+                    "type": "text",
+                    "searchable": {
+                        "type": "select",
+                        "name": "name",
+                        "label": "名称",
+                        "placeholder": "选择名称",
+                        "source": "${nameOptions}"
+                    }
+                },
+                {
+                    "name": "original_model",
+                    "label": "原始模型",
+                    "type": "text",
+                    "searchable": {
+                        "type": "select",
+                        "name": "original_model",
+                        "label": "原始模型",
+                        "placeholder": "选择原始模型",
+                        "source": "${originalModelOptions}"
+                    }
+                },
+                {
+                    "name": "mapped_model",
+                    "label": "映射模型",
+                    "type": "text",
+                    "searchable": {
+                        "type": "select",
+                        "name": "mapped_model",
+                        "label": "映射模型",
+                        "placeholder": "选择映射模型",
+                        "source": "${mappedModelOptions}"
+                    }
+                },
+                {
+                    "name": "base_url",
+                    "label": "基础URL",
+                    "type": "text",
+                    "searchable": true
+                },
+                {
+                    "name": "weight",
+                    "label": "权重",
+                    "type": "number",
+                    "sortable": true
+                }
+            ]
+        }
+    ]
+}

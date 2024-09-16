@@ -20,6 +20,16 @@
       {
         "children": [
           {
+            "label": "渠道管理",
+            "url": "/pages/provider",
+            "icon": "fa fa-cube",
+            "schemaApi": "get:/pages/page-provider.json"
+          }
+        ]
+      },
+      {
+        "children": [
+          {
             "label": "系统配置管理",
             "url": "/pages/edit-config",
             "icon": "fa fa-cube",
