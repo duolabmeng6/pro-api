@@ -6,7 +6,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker, class_mapper
 from sqlalchemy.exc import OperationalError, SQLAlchemyError, IntegrityError
 import uuid
 import hashlib
-from app.db.comm import db, DB_PATH
+from app.db.comm import db, DB_PATH, get_current_time, TIMEZONE
 
 Base = declarative_base()
 
@@ -15,11 +15,11 @@ class ReqLog(Base):
     __tablename__ = 'req_logs'
 
     id = Column(Integer, primary_key=True, autoincrement=True, comment='主键ID')
-    time = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, comment='请求时间')
+    time = Column(DateTime(timezone=True), nullable=False, default=get_current_time, comment='请求时间')
     req_id = Column(String(36), nullable=False, index=True, comment='请求ID')
     service_provider = Column(String(50), nullable=False, comment='服务提供商')
     token = Column(String(100), nullable=False, comment='用户令牌')
-    model = Column(String(50), nullable=False, comment='���用的模型')
+    model = Column(String(50), nullable=False, comment='用户请求的模型')
     prompt = Column(Integer, nullable=False, default=0, comment='提示词token数')
     completion = Column(Integer, nullable=False, default=0, comment='完成的内容token数')
     quota = Column(Float, nullable=False, default=0.0, comment='消耗的配额')
@@ -29,8 +29,8 @@ class ReqLog(Base):
     api_status = Column(String(10), nullable=True, comment='api状态码')
     api_error = Column(Text, nullable=True, comment='api错误信息')
     status = Column(String(20), nullable=False, default='pending', comment='请求态')
-    created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, comment='创建时间')
-    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow,
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.datetime.utcnow, comment='创建时间')
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow,
                         comment='更新时间')
     md5 = Column(String(32), nullable=False, index=True, comment='MD5哈希，于缓存')
 

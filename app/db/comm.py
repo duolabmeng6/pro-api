@@ -1,4 +1,6 @@
 import os
+import pytz
+from datetime import datetime
 
 from app.api_data import db
 
@@ -18,3 +20,16 @@ if DB_PATH == "":
     print("没有配置数据库")
 else:
     print("数据库路径", DB_PATH)
+
+# 添加时区设置
+TIMEZONE = pytz.timezone('Asia/Shanghai')  # 设置为您所在的时区，例如：上海
+
+def get_current_time():
+    """获取当前时间，考虑时区"""
+    return datetime.now(TIMEZONE)
+
+def convert_to_local_time(db_time):
+    """将数据库时间转换为本地时间"""
+    if db_time.tzinfo is None:
+        db_time = pytz.UTC.localize(db_time)
+    return db_time.astimezone(TIMEZONE)

@@ -17,8 +17,8 @@ class ReqCache(Base):
     __tablename__ = 'req_cache'
 
     id = Column(Integer, primary_key=True, autoincrement=True, comment='主键ID')
-    created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, comment='创建时间')
-    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow,
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.datetime.utcnow, comment='创建时间')
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow,
                         comment='更新时间')
     md5 = Column(String(32), nullable=False, unique=True, index=True, comment='MD5哈希')
     req = Column(Text, nullable=False, comment='请求数据')
