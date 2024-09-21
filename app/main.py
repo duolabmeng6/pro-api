@@ -220,7 +220,7 @@ async def chat_completions(
     if first_chunk:
         async def generate_stream():
             async for chunk in genData:
-                yield chunk + "\r\n\r\n"
+                yield chunk + "\n\n"
                 if debug:
                     await asyncio.sleep(0.1)
                     logger.info(f"发送到客户端\r\n{chunk}")
@@ -293,6 +293,6 @@ if __name__ == "__main__":
         "__main__:app",
         host="0.0.0.0",
         port=8000,
-        # reload=True,
+        reload=True,
         # workers=1,
     )
