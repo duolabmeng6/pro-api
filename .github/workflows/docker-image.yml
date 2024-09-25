@@ -82,8 +82,7 @@ jobs:
         tags: |
           duolabmeng/pro-api:${{ needs.jobs_v.outputs.version }}
           duolabmeng/pro-api:latest
-        cache-from: type=local,src=/tmp/.buildx-cache
-        cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         provenance: true
         sbom: true
-        
