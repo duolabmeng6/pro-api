@@ -17,6 +17,7 @@ import base64
 
 
 def 监视配置(文件路径, 修改回调fn):
+    print(f"创建监视配置{文件路径}")
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
 
