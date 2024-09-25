@@ -263,8 +263,10 @@ app.add_middleware(
 @app.get("/reload_config")
 def reloadconfig():
     reload_config()
-    return f"已经执行刷新配置{time.time()}"
-
+    return JSONResponse({
+        "status": 0,
+        "msg": f"已经执行刷新配置"
+    })
 
 class GzipStaticFiles(StaticFiles):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

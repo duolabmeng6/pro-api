@@ -23,6 +23,15 @@
                     "url": "/admin/config",
                     "method": "post"
                 }
+            },
+            {
+                "type": "button",
+                "label": "重新加载配置",
+                "actionType": "ajax",
+                "api": {
+                    "url": "/reload_config",
+                    "method": "get"
+                }
             }
         ]
     }
