@@ -9,9 +9,51 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-push:
+  jobs_v:
+    name: 构建版本号和变更信息
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.create_version.outputs.NewVersion }}  # 版本号
+      body: ${{ steps.create_body.outputs.Body }} # 版本变更内容
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: 检查是否 "发布"
+        run: |
+          latest_commit_message=$(git log -1 --pretty=%B)
+          if [[ $latest_commit_message == *"发布"* ]]; then
+            echo "找到发布关键字继续工作流"
+          else
+            echo "没有找到发布关键字停止工作流"
+            exit 1  # 停止工作流程
+          fi
+      - name: 递增版本号
+        id: create_version
+        uses: duolabmeng6/action-autotag-python@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: 获取更新日志
+        id: create_body
+        uses: duolabmeng6/action-Releases-log@main
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FILE: .github/releasesText.md
+          KEYS: bug,改进,优化,新增,删除
+      - name: 查看版本号和更新日志
+        run: |
+          echo ${{ format('version={0}', steps.create_version.outputs.NewVersion ) }}
+          echo "${{ steps.create_body.outputs.Body }}"
 
+
+  deploy:
+    name: 发布到docker
+    needs: [ jobs_v ]
+    runs-on: ubuntu-latest
+    env:
+      version: ${{ needs.jobs_v.outputs.version }}
+      body: ${{ needs.jobs_v.outputs.Body }}
     steps:
     - name: 检出代码
       uses: actions/checkout@v4
@@ -35,4 +77,5 @@ jobs:
         file: Dockerfile
         platforms: linux/amd64,linux/arm64
         push: true
-        tags: duolabmeng/pro-api:latest
+        #tags: duolabmeng/pro-api:latest
+        tags: duolabmeng/pro-api:${{ needs.jobs_v.outputs.version }}
