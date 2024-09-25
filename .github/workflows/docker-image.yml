@@ -8,6 +8,8 @@ on:
       - 'app/**'
   workflow_dispatch:
 
+permissions: write-all # 给所有工作写权限
+
 jobs:
   jobs_v:
     name: 构建版本号和变更信息
