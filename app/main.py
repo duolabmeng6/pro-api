@@ -36,7 +36,7 @@ def reload_config():
 
 config_url = os.environ.get('config_url', False)
 if not config_url:
-    api_file_path = os.path.join(os.path.dirname(__file__), './api.yaml')
+    api_file_path = os.path.join(os.path.dirname(__file__), 'api.yaml')
     监视配置(api_file_path, reload_config)
 
 reload_config()
