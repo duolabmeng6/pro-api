@@ -215,7 +215,13 @@ async def chat_completions(
                 api_status="200",
                 api_error=""
             )
-        return first_chunk
+        return JSONResponse(
+            content=first_chunk, 
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no"
+            }
+        )
 
     if first_chunk:
         async def generate_stream():
@@ -238,7 +244,14 @@ async def chat_completions(
             if debug:
                 logger.info(f"数据迭代完成，统计信息：{json.dumps(stats_data, indent=4, ensure_ascii=False)}")
 
-        return StreamingResponse(generate_stream(), media_type="text/event-stream")
+        return StreamingResponse(
+            generate_stream(), 
+            media_type="text/event-stream", 
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no"
+            }
+        )
 
 
 @app.get("/v1/models")
