@@ -348,7 +348,6 @@ pip install -r requirements.txt --no-user -t ./app
 ```
 
 ## Star 记录
-
 <a href="https://github.com/duolabmeng6/pro-api/stargazers">
         <img width="500" alt="Star History Chart" src="https://api.star-history.com/svg?repos=duolabmeng6/pro-api&type=Date">
 </a>
