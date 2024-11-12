@@ -109,10 +109,10 @@ class baseProvider:
         DONE = False
         async for chunk in genData:
             content = self.DataHeadler.handle_SSE_data_line(chunk)
+            if content:
+                yield "data: " + content
             if content == "[DONE]":
                 DONE = True
                 continue
-            if content:
-                yield "data: " + content
         if not DONE:
             yield "data: [DONE]"
