@@ -135,8 +135,14 @@ class apiDB:
 
         filtered_usability_model = []
         for model in usability_model:
+            # 检查用户是否有权限使用该模型
             for user_model in user_use_model:
-                if user_model == model['original_model']:
+                if user_model.endswith('*'):
+                    # 如果用户模型以*结尾，检查原始模型名称是否以*之前的部分开头
+                    if model['original_model'].startswith(user_model[:-1]):
+                        filtered_usability_model.append(model)
+                        break
+                elif user_model == model['original_model']:
                     filtered_usability_model.append(model)
                     break
 
@@ -184,32 +190,35 @@ if __name__ == "__main__":
     def init():
         config = pyefun.读入文本("./api.yaml")
         db = apiDB(config)
-        # ret = db.verify_token("sk-abcdefg")
-        # print("token状态", ret)
+        ret = db.verify_token("sk-aliyun")
+        print("token状态", ret)
+
         # ret = db.verify_token("sk-111111")
         # print("token状态", ret)
-        api_key = "sk-111111"
+        api_key = "sk-aliyun"
         model = "qwen2-72b"
         model2 = "gemini-1.5-pro"
 
+
         provider, err = db.get_user_provider(api_key, model)
         print("配置:", err, json.dumps(provider, indent=4))
-
+        #
         provider2, err = db.get_user_provider(api_key, model2)
-        print("配置:", err, json.dumps(provider, indent=4))
-        balance = Balance(api_key + model, provider2)
-        balance = Balance(api_key + model2, provider)
+        print("配置:", err, json.dumps(provider2, indent=4))
+        # balance = Balance(api_key + model, provider2)
+        # balance = Balance(api_key + model2, provider)
+        #
+        #
+        # for i in range(10):
+        #     p = balance.next()
+        #     print(p.data)
+        #
+        # for i in range(10):
+        #     p = balance.next()
+        #     print(p.data)
+        #
+        # yield
 
 
-        for i in range(10):
-            p = balance.next()
-            print(p.data)
-
-        for i in range(10):
-            p = balance.next()
-            print(p.data)
-
-        yield
-
-
-    asyncio.run(init())
+    init()
+    # asyncio.run(init())
